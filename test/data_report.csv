@@ -1,0 +1,12 @@
+asset_id,ip_address,vulnerability_id,solution_id,nexpose_id,url,summary,fix
+24,127.0.0.1,19500,109745,add-secure-to-ssl-cookie,,Add the Secure flag to cookies sent over SSL,"
+
+For each cookie sent over SSL in your web-site, add the ""Secure"" flag to the cookie.
+         For example:
+
+<pre>
+<pre>Set-Cookie: <name>=<value>[; <Max-Age>=<age>] 
+            [; expires=<date>][; domain=<domain_name>] 
+            [; path=<some_path>][; secure][; HttpOnly] 
+            </pre></pre>
+"
