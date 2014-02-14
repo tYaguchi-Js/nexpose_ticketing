@@ -1,12 +1,12 @@
-# This class serves as the JIRA interface
-# that creates issues within JIRA from vulnerabilities
-# found in Nexpose.
-# Copyright:: Copyright (c) 2014 Rapid7, LLC.
 require 'json'
 require 'net/http'
 require 'net/https'
 require 'uri'
 require 'csv'
+# This class serves as the JIRA interface
+# that creates issues within JIRA from vulnerabilities
+# found in Nexpose.
+# Copyright:: Copyright (c) 2014 Rapid7, LLC.
 class JiraHelper
   attr_accessor :jira_data, :options
   def initialize(jira_data, options)

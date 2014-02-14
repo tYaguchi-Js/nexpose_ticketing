@@ -5,7 +5,7 @@ module NexposeTicketing
     require 'nexpose'
     require 'nexpose_ticketing/queries'
 
-    def nexpose_login (nexpose_data)
+    def nexpose_login(nexpose_data)
       @nsc = Nexpose::Connection.new(nexpose_data[:nxconsole], nexpose_data[:nxuser], nexpose_data[:nxpasswd])
       @nsc.login
     end
@@ -35,7 +35,7 @@ module NexposeTicketing
       report_config.add_filter('version', '1.1.0')
       report_config.add_filter('query', Queries.last_scans)
       report_output = report_config.generate(@nsc)
-      csv_output = CSV.parse(report_output.chomp,  headers: :first_row )
+      csv_output = CSV.parse(report_output.chomp,  headers: :first_row)
       saved_file.open(csv_file_name, 'w') { |file| file.puts(csv_output) } unless saved_file.nil?
       if saved_file.nil?
         File.open(csv_file_name, 'w') { |file| file.puts(csv_output) }
@@ -64,7 +64,8 @@ module NexposeTicketing
     #   - +site_options+ -  A Hash with site(s) and severity level.
     #
     # * *Returns* :
-    #   - Returns CSV |asset_id| |ip_address| |current_scan| |vulnerability_id| |solution_id| |nexpose_id| |url| |summary| |fix|
+    #   - Returns CSV |asset_id| |ip_address| |current_scan| |vulnerability_id| |solution_id| |nexpose_id|
+    #     |url| |summary| |fix|
     #
     def all_vulns(site_options = {}, report_config = Nexpose::AdhocReportConfig.new(nil, 'sql'))
       sites = Array(site_options[:sites])
@@ -86,7 +87,8 @@ module NexposeTicketing
     #   - +site_options+ -  A Hash with site(s), reported_scan_id and severity level.
     #
     # * *Returns* :
-    #   - Returns CSV |asset_id| |ip_address| |current_scan| |vulnerability_id| |solution_id| |nexpose_id| |url| |summary| |fix|
+    #   - Returns CSV |asset_id| |ip_address| |current_scan| |vulnerability_id| |solution_id| |nexpose_id|
+    #     |url| |summary| |fix|
     #
     def delta_vulns_sites(site_options = {}, report_config = Nexpose::AdhocReportConfig.new(nil, 'sql'))
       site = site_options[:site_id]

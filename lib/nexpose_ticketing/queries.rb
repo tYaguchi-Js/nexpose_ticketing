@@ -6,7 +6,7 @@ module NexposeTicketing
   module Queries
     # Gets all the latests scans.
     # Returns |site.id| |last_scan_id| |finished|
-    def Queries.last_scans
+    def self.last_scans
       'SELECT ds.site_id, ds.last_scan_id, dsc.finished
         FROM dim_site ds
         JOIN dim_scan dsc ON ds.last_scan_id = dsc.scan_id'
@@ -15,9 +15,9 @@ module NexposeTicketing
     # Gets all delta vulns for all sites.
     # Returns |asset_id| |ip_address| |current_scan|  |vulnerability_id|
     # |solution_id| |nexpose_id| |url| |summary| |fix|
-    def Queries.all_delta_vulns
-      "SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id, ds.url,
-      proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix
+    def self.all_delta_vulns
+      "SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id,
+       ds.url,proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix
         FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN
@@ -37,9 +37,9 @@ module NexposeTicketing
     # Gets all delta vulns happening after reported scan id
     # Returns |asset_id| |ip_address| |current_scan|  |vulnerability_id|
     # |solution_id| |nexpose_id| |url| |summary| |fix|
-    def Queries.delta_vulns_since_scan(reported_scan)
-      "SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id, ds.url,
-      proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix
+    def self.delta_vulns_since_scan(reported_scan)
+      "SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id,
+       ds.url, proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix
         FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN

@@ -3,7 +3,7 @@ require 'nexpose_ticketing/ticket_repository'
 require 'nexpose_ticketing/queries'
 include NexposeTicketing
 
-describe "Ticketing repository" do
+describe 'Ticketing repository' do
 
   before(:each) do
     @tr = TicketRepository.new
@@ -26,9 +26,9 @@ describe "Ticketing repository" do
     report_config.should_receive(:add_filter).with('version', '1.1.0')
     report_config.should_receive(:add_filter).with('query', Queries.last_scans)
     report_config.should_receive(:generate).with(nil).and_return(mock_last_scan_data)
-    saved_file.should_receive(:open).with("mock_file_name.csv", 'w').and_yield(saved_file)
+    saved_file.should_receive(:open).with('mock_file_name.csv', 'w').and_yield(saved_file)
     saved_file.should_receive(:puts).with(csv_mock_data)
-    @tr.save_last_scans("mock_file_name.csv", saved_file, report_config)
+    @tr.save_last_scans('mock_file_name.csv', saved_file, report_config)
   end
 
   it 'should return last scan information' do
@@ -68,7 +68,7 @@ describe "Ticketing repository" do
     report_config.should_receive(:add_filter).with('site', anything)
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
-    @tr.all_vulns({:sites => [1]}, report_config)
+    @tr.all_vulns({ sites: [1] }, report_config)
   end
 
   it 'should generate an all vulnerabilities report with all sites defined' do
@@ -78,12 +78,12 @@ describe "Ticketing repository" do
     report_config.should_receive(:add_filter).with('site', anything).at_most(:twice)
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
-    @tr.all_vulns({:sites => [1, 2]}, report_config)
+    @tr.all_vulns({ sites: %w(1 2) }, report_config)
   end
 
   it 'delta vuns should raise an exception if no reported scan id is defined' do
     report_config = double('Nexpose::AdhocReportConfig')
-    expect{@tr.delta_vulns_sites({:site => '1'}, report_config)}.to raise_error
+    expect{@tr.delta_vulns_sites({ site: '1' }, report_config)}.to raise_error
   end
 
   it 'delta vuns should raise an exception if no site is defined' do
@@ -98,7 +98,6 @@ describe "Ticketing repository" do
     report_config.should_receive(:add_filter).with('site', '1')
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
-    @tr.delta_vulns_sites({ :site_id => '1', :scan_id => 1 }, report_config)
+    @tr.delta_vulns_sites({ site_id: '1', scan_id: 1 }, report_config)
   end
-
 end

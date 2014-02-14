@@ -2,8 +2,8 @@
 require 'yaml'
 require 'nexpose_ticketing'
 # Path to the JIRA Configuration file.
-JIRA_CONFIG_PATH = File.join(File.dirname(__FILE__),'../lib/nexpose_ticketing/config/jira.config')
-#JIRA_CONFIG_PATH = '../lib/nexpose_ticketing/config/jira.config'
+JIRA_CONFIG_PATH = File.join(File.dirname(__FILE__),
+                             '../lib/nexpose_ticketing/config/jira.config')
 
 # Read in JIRA options from jira.config.
 jira_options = begin
@@ -14,4 +14,3 @@ end
 
 # Initialize Ticket Service using JIRA.
 NexposeTicketing.start(jira_options)
-

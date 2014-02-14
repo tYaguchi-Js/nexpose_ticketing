@@ -53,8 +53,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     require 'fileutils'
     require 'nexpose_ticketing/ticket_repository'
 
-    TICKET_SERVICE_CONFIG_PATH =  File.join(File.dirname(__FILE__),'/config/ticket_service.config')
-    LOGGER_FILE = File.join(File.dirname(__FILE__),'/log/ticket_service.log')
+    TICKET_SERVICE_CONFIG_PATH =  File.join(File.dirname(__FILE__), '/config/ticket_service.config')
+    LOGGER_FILE = File.join(File.dirname(__FILE__), '/log/ticket_service.log')
 
     attr_accessor :helper_data, :nexpose_data, :options, :ticket_repository, :first_time, :nexpose_site_histories
 
@@ -75,7 +75,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       # Loads all the helpers.
       log_message('Loading helpers.')
-      Dir[File.join(File.dirname(__FILE__),'/helpers/*.rb')].each do |file|
+      Dir[File.join(File.dirname(__FILE__), '/helpers/*.rb')].each do |file|
         log_message("Loading helper: #{file}")
         require_relative file
       end
@@ -103,7 +103,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     end
 
     # Prepares all the local and nexpose historical data.
-    def prepare_historical_data(ticket_repository, options, historical_scan_file = File.join(File.dirname(__FILE__),"#{options[:file_name]}"))
+    def prepare_historical_data(ticket_repository, options,
+        historical_scan_file = File.join(File.dirname(__FILE__), "#{options[:file_name]}"))
       if File.exists?(historical_scan_file)
         log_message("Reading historical CSV file: #{historical_scan_file}.")
         file_site_histories = ticket_repository.read_last_scans(historical_scan_file)
@@ -118,7 +119,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     end
 
     # Generates a full site(s) report ticket(s).
-    def all_site_report(ticket_repository, options, helper, historical_scan_file = File.join(File.dirname(__FILE__),"#{options[:file_name]}") )
+    def all_site_report(ticket_repository, options, helper,
+        historical_scan_file = File.join(File.dirname(__FILE__), "#{options[:file_name]}"))
       log_message('First time run, generating full vulnerability report.') if @first_time
       log_message('No site(s) specified, generating full vulnerability report.') if options[:sites].empty?
       all_delta_vulns = ticket_repository.all_vulns(severity: options[:severity])
@@ -131,7 +133,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     end
 
     # There's possibly a new scan with new data.
-    def delta_site_report(ticket_repository, options, helper, file_site_histories, historical_scan_file = File.join(File.dirname(__FILE__),"#{options[:file_name]}"))
+    def delta_site_report(ticket_repository, options, helper, file_site_histories,
+          historical_scan_file = File.join(File.dirname(__FILE__), "#{options[:file_name]}"))
       # Compares the Scan information from the File && Nexpose.
       no_processing = true
       @nexpose_site_histories.each do |site_id, scan_id|
@@ -165,7 +168,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     # There's a new scan with possibly new vulnerabilities.
     def delta_site_new_scan(ticket_repository, site_id, options, helper, file_site_histories)
       log_message("New scan detected for site: #{site_id}. Generating report.")
-      new_scan_vuln = ticket_repository.delta_vulns_sites(scan_id: file_site_histories[site_id], site_id: site_id, severity: options[:severity])
+      new_scan_vuln = ticket_repository.delta_vulns_sites(scan_id: file_site_histories[site_id], site_id: site_id,
+                                                          severity: options[:severity])
       # Preparse for an empty report: No new vulns between scans.
       preparse = CSV.new(new_scan_vuln.chomp, headers: :first_row)
       empty_report = preparse.shift.nil?
