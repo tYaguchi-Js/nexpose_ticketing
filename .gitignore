@@ -11,6 +11,10 @@ spec/reports
 test/tmp
 test/version_tmp
 tmp
+.idea
+lib/log/*
+lib/*.csv
+lib/config/*
 
 # YARD artifacts
 .yardoc
