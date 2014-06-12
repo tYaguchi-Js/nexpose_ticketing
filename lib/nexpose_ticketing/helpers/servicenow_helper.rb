@@ -105,7 +105,7 @@ class ServiceNowHelper
           'impact' => '1',
           'urgency' => '1',
           'short_description' => "#{row['ip_address']} => #{summary}",
-          'work_notes' => "{row['fix'] \n\n #{row['url']}"
+          'work_notes' => "#{row['fix']} \n\n #{row['url']}"
       }.to_json
       tickets.push(ticket)
     end
