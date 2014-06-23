@@ -14,7 +14,7 @@ class JiraHelper
     @options = options
   end
 
-  def create_ticket(tickets)
+  def create_tickets(tickets)
     fail 'Ticket(s) cannot be empty.' if tickets.empty? || tickets.nil?
     tickets.each do |ticket|
       headers = { 'Content-Type' => 'application/json',
@@ -33,7 +33,7 @@ class JiraHelper
   end
 
   # Prepares tickets from the CSV.
-  def prepare_tickets(vulnerability_list)
+  def prepare_create_tickets(vulnerability_list)
     @ticket = Hash.new(-1)
     case @options[:ticket_mode]
     # 'D' Default IP *-* Vulnerability
