@@ -54,7 +54,7 @@ describe 'Ticketing repository' do
   it 'all vulnerabilities should generate a report with all vulnerabilities and no site defined' do
     report_config = double('Nexpose::AdhocReportConfig')
     report_config.should_receive(:add_filter).with('version', '1.1.0')
-    report_config.should_receive(:add_filter).with('query', Queries.all_delta_vulns)
+    report_config.should_receive(:add_filter).with('query', Queries.all_new_vulns)
     report_config.should_not_receive(:add_filter).with('site', anything)
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
@@ -64,7 +64,7 @@ describe 'Ticketing repository' do
   it 'should generate an all vulnerabilities report with all vulnerabilities and a site defined' do
     report_config = double('Nexpose::AdhocReportConfig')
     report_config.should_receive(:add_filter).with('version', '1.1.0')
-    report_config.should_receive(:add_filter).with('query', Queries.all_delta_vulns)
+    report_config.should_receive(:add_filter).with('query', Queries.all_new_vulns)
     report_config.should_receive(:add_filter).with('site', anything)
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
@@ -74,30 +74,50 @@ describe 'Ticketing repository' do
   it 'should generate an all vulnerabilities report with all sites defined' do
     report_config = double('Nexpose::AdhocReportConfig')
     report_config.should_receive(:add_filter).with('version', '1.1.0')
-    report_config.should_receive(:add_filter).with('query', Queries.all_delta_vulns)
+    report_config.should_receive(:add_filter).with('query', Queries.all_new_vulns)
     report_config.should_receive(:add_filter).with('site', anything).at_most(:twice)
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
     @tr.all_vulns({ sites: %w(1 2) }, report_config)
   end
-
+  
   it 'delta vuns should raise an exception if no reported scan id is defined' do
     report_config = double('Nexpose::AdhocReportConfig')
-    expect{@tr.delta_vulns_sites({ site: '1' }, report_config)}.to raise_error
+    expect{@tr.new_vulns_sites({ site: '1' }, report_config)}.to raise_error
   end
 
   it 'delta vuns should raise an exception if no site is defined' do
     report_config = double('Nexpose::AdhocReportConfig')
-    expect{@tr.delta_vulns_sites({}, report_config)}.to raise_error
+    expect{@tr.new_vulns_sites({}, report_config)}.to raise_error
   end
 
   it 'delta vuns should generate a report with a site and a scan id defined' do
     report_config = double('Nexpose::AdhocReportConfig')
     report_config.should_receive(:add_filter).with('version', '1.1.0')
-    report_config.should_receive(:add_filter).with('query', Queries.delta_vulns_since_scan(1))
+    report_config.should_receive(:add_filter).with('query', Queries.new_vulns_since_scan(1))
     report_config.should_receive(:add_filter).with('site', '1')
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
-    @tr.delta_vulns_sites({ site_id: '1', scan_id: 1 }, report_config)
+    @tr.new_vulns_sites({ site_id: '1', scan_id: 1 }, report_config)
+  end
+  
+  it 'should generate a closed vulnerabilities report with all vulnerabilities and a site defined' do
+    report_config = double('Nexpose::AdhocReportConfig')
+    report_config.should_receive(:add_filter).with('version', '1.1.0')
+    report_config.should_receive(:add_filter).with('query', Queries.old_vulns_since_scan(1))
+    report_config.should_receive(:add_filter).with('site', anything).at_most(:twice)
+    report_config.should_receive(:add_filter).with('vuln-severity', anything)
+    report_config.should_receive(:generate).with(nil)
+    @tr.old_vulns_sites({ site_id: '1', scan_id: 1 }, report_config)
+  end
+  
+  it 'should generate an all vulnerabilities report with a site and a scan id defined' do
+    report_config = double('Nexpose::AdhocReportConfig')
+    report_config.should_receive(:add_filter).with('version', '1.1.0')
+    report_config.should_receive(:add_filter).with('query', Queries.all_vulns_since_scan(1))
+    report_config.should_receive(:add_filter).with('site', '1')
+    report_config.should_receive(:add_filter).with('vuln-severity', anything)
+    report_config.should_receive(:generate).with(nil)
+    @tr.all_vulns_sites({ site_id: '1', scan_id: 1 }, report_config)
   end
 end
