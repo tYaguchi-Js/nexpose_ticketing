@@ -1,0 +1,9 @@
+asset_id,ip_address,current_scan,vulnerability_id,solution_id,nexpose_id,url,summary,fix,comparison
+25,127.0.0.1,15,15508,25045,linuxrpm-upgrade-rhel60-x86_64-perl-archive-tar,,Upgrade perl-Archive-Tar,"
+
+Update perl-Archive-Tar to the latest version available from Red Hat, using tools like yum or up2date.
+",New
+25,127.0.0.1,15,14931,59789,linuxrpm-upgrade-rhel60-x86_64-jasper-debuginfo,https://rhn.redhat.com/rhn/channels/software/Search.do?search_string=jasper-debuginfo-1.900.1-15.el6_1.1.x86_64.rpm,Upgrade jasper-debuginfo,"
+Download and apply the upgrade from: 
+<a href=""https://rhn.redhat.com/rhn/channels/software/Search.do?search_string=jasper-debuginfo-1.900.1-15.el6_1.1.x86_64.rpm"">https://rhn.redhat.com/rhn/channels/software/Search.do?search_string=jasper-debuginfo-1.900.1-15.el6_1.1.x86_64.rpm</a>
+",Same

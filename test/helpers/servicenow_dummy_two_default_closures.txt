@@ -1,0 +1,2 @@
+{"sysparm_action":"update","sysparm_query":"work_notesCONTAINSNXID: 251550825045","state":"7"}
+{"sysparm_action":"update","sysparm_query":"work_notesCONTAINSNXID: 251493159789","state":"7"}
