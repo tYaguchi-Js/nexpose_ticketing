@@ -32,7 +32,7 @@ module NexposeTicketing
     #   - +csv_file_name+ -  CSV File name.
     #
     def save_last_scans(csv_file_name, saved_file = nil, report_config = Nexpose::AdhocReportConfig.new(nil, 'sql'))
-      report_config.add_filter('version', '1.1.0')
+      report_config.add_filter('version', '1.2.0')
       report_config.add_filter('query', Queries.last_scans)
       report_output = report_config.generate(@nsc)
       csv_output = CSV.parse(report_output.chomp,  headers: :first_row)
@@ -48,7 +48,7 @@ module NexposeTicketing
     #   - A hash with site_ids => last_scan_id
     #
     def last_scans(report_config = Nexpose::AdhocReportConfig.new(nil, 'sql'))
-      report_config.add_filter('version', '1.1.0')
+      report_config.add_filter('version', '1.2.0')
       report_config.add_filter('query', Queries.last_scans)
       report_output = report_config.generate(@nsc).chomp
       nexpose_sites = Hash.new(-1)
@@ -70,8 +70,8 @@ module NexposeTicketing
     def all_vulns(site_options = {}, report_config = Nexpose::AdhocReportConfig.new(nil, 'sql'))
       sites = Array(site_options[:sites])
       severity = site_options[:severity].nil? ? 0 : site_options[:severity]
-      report_config.add_filter('version', '1.1.0')
-      report_config.add_filter('query', Queries.all_delta_vulns)
+      report_config.add_filter('version', '1.2.0')
+      report_config.add_filter('query', Queries.all_new_vulns)
       unless sites.empty?
         sites.each do |site_id|
           report_config.add_filter('site', site_id)
@@ -81,7 +81,7 @@ module NexposeTicketing
       report_config.generate(@nsc)
     end
 
-    # Gets the delta vulns from base scan reported_scan_id and the newest / latest scan from a site.
+    # Gets the new vulns from base scan reported_scan_id and the newest / latest scan from a site.
     #
     # * *Args*    :
     #   - +site_options+ -  A Hash with site(s), reported_scan_id and severity level.
@@ -90,13 +90,56 @@ module NexposeTicketing
     #   - Returns CSV |asset_id| |ip_address| |current_scan| |vulnerability_id| |solution_id| |nexpose_id|
     #     |url| |summary| |fix|
     #
-    def delta_vulns_sites(site_options = {}, report_config = Nexpose::AdhocReportConfig.new(nil, 'sql'))
+    def new_vulns_sites(site_options = {}, report_config = Nexpose::AdhocReportConfig.new(nil, 'sql'))
       site = site_options[:site_id]
       reported_scan_id = site_options[:scan_id]
       fail 'Site cannot be null or empty' if site.nil? || reported_scan_id.nil?
       severity = site_options[:severity].nil? ? 0 : site_options[:severity]
-      report_config.add_filter('version', '1.1.0')
-      report_config.add_filter('query', Queries.delta_vulns_since_scan(reported_scan_id))
+      report_config.add_filter('version', '1.2.0')
+      report_config.add_filter('query', Queries.new_vulns_since_scan(reported_scan_id))
+      report_config.add_filter('site', site)
+      report_config.add_filter('vuln-severity', severity)
+      report_config.generate(@nsc)
+    end
+    
+    # Gets the old vulns from base scan reported_scan_id and the newest / latest scan from a site.
+    #
+    # * *Args*    :
+    #   - +site_options+ -  A Hash with site(s), reported_scan_id and severity level.
+    #
+    # * *Returns* :
+    #   - Returns CSV |asset_id| |ip_address| |current_scan| |vulnerability_id| |solution_id| |nexpose_id|
+    #     |url| |summary| |fix|
+    #
+    def old_vulns_sites(site_options = {}, report_config = Nexpose::AdhocReportConfig.new(nil, 'sql'))
+      site = site_options[:site_id]
+      reported_scan_id = site_options[:scan_id]
+      fail 'Site cannot be null or empty' if site.nil? || reported_scan_id.nil?
+      severity = site_options[:severity].nil? ? 0 : site_options[:severity]
+      report_config.add_filter('version', '1.2.0')
+      report_config.add_filter('query', Queries.old_vulns_since_scan(reported_scan_id))
+      report_config.add_filter('site', site)
+      report_config.add_filter('vuln-severity', severity)
+      report_config.generate(@nsc)
+    end
+    
+    # Gets all vulns from base scan reported_scan_id and the newest / latest scan from a site. This is
+    # used for IP-based issue updating. Includes the baseline comparision value ('Old','New', or 'Same').
+    #
+    # * *Args*    :
+    #   - +site_options+ -  A Hash with site(s), reported_scan_id and severity level.
+    #
+    # * *Returns* :
+    #   - Returns CSV |asset_id| |ip_address| |current_scan| |vulnerability_id| |solution_id| |nexpose_id|
+    #     |url| |summary| |fix| |comparison| 
+    #
+    def all_vulns_sites(site_options = {}, report_config = Nexpose::AdhocReportConfig.new(nil, 'sql'))
+      site = site_options[:site_id]
+      reported_scan_id = site_options[:scan_id]
+      fail 'Site cannot be null or empty' if site.nil? || reported_scan_id.nil?
+      severity = site_options[:severity].nil? ? 0 : site_options[:severity]
+      report_config.add_filter('version', '1.2.0')
+      report_config.add_filter('query', Queries.all_vulns_since_scan(reported_scan_id))
       report_config.add_filter('site', site)
       report_config.add_filter('vuln-severity', severity)
       report_config.generate(@nsc)

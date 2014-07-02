@@ -11,9 +11,9 @@ Gem::Specification.new do |s|
   s.email                 = ['damian_finol@rapid7.com']
   s.files                 = Dir['[A-Z]*'] + Dir['lib/**/*']
   s.require_paths         = ['lib']
-  s.extra_rdoc_files      = ['README.markdown']
+  s.extra_rdoc_files      = ['README.md']
   s.required_ruby_version = '>= 1.9'
   s.platform              = 'ruby'
-  s.executables           << 'nexpose_jira'
+  s.executables           = ['nexpose_jira','nexpose_servicenow']
   s.add_dependency('nexpose', '>= 0.6.0')
 end

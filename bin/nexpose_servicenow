@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+require 'yaml'
+require 'nexpose_ticketing'
+
+# Path to ServiceNow configuration file
+SERVICENOW_CONFIG_PATH = File.join(File.dirname(__FILE__),
+                                   '../lib/nexpose_ticketing/config/servicenow.config')
+
+# Read in ServiceNow options from servicenow.config
+servicenow_options = begin
+  YAML.load_file(SERVICENOW_CONFIG_PATH)
+rescue ArgumentError => e
+  raise "Could not parse YAML #{SERVICENOW_CONFIG_PATH} : #{e.message}"
+end
+
+# Initialize Nexpose Ticket Service using ServiceNow
+NexposeTicketing.start(servicenow_options)

@@ -125,8 +125,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       log_message('No site(s) specified, generating full vulnerability report.') if options[:sites].empty?
       all_delta_vulns = ticket_repository.all_vulns(severity: options[:severity])
       log_message('Preparing tickets.')
-      tickets = helper.prepare_tickets(all_delta_vulns)
-      helper.create_ticket(tickets)
+      tickets = helper.prepare_create_tickets(all_delta_vulns)
+      helper.create_tickets(tickets)
       log_message("Done processing, updating historical CSV file #{historical_scan_file}.")
       ticket_repository.save_last_scans(historical_scan_file)
       log_message('Done updating historical CSV file, service shutting down.')
@@ -161,23 +161,56 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       log_message("New site id: #{site_id} detected. Generating report.")
       new_site_vuln = ticket_repository.all_vulns(sites: [site_id], severity: options[:severity])
       log_message('Report generated, preparing tickets.')
-      ticket = helper.prepare_tickets(new_site_vuln)
-      helper.create_ticket(ticket)
+      ticket = helper.prepare_create_tickets(new_site_vuln)
+      helper.create_tickets(ticket)
     end
 
     # There's a new scan with possibly new vulnerabilities.
     def delta_site_new_scan(ticket_repository, site_id, options, helper, file_site_histories)
       log_message("New scan detected for site: #{site_id}. Generating report.")
-      new_scan_vuln = ticket_repository.delta_vulns_sites(scan_id: file_site_histories[site_id], site_id: site_id,
+      
+      if options[:ticket_mode] == 'I'
+        # I-mode tickets require updating the tickets in the target system.
+        log_message("Scan id for new scan: #{file_site_histories[site_id]}.")
+        all_scan_vuln = ticket_repository.all_vulns_sites(scan_id: file_site_histories[site_id], 
+                                                          site_id: site_id,
                                                           severity: options[:severity])
-      # Preparse for an empty report: No new vulns between scans.
-      preparse = CSV.new(new_scan_vuln.chomp, headers: :first_row)
-      empty_report = preparse.shift.nil?
-      log_message("No new vulnerabilities found in new scan for site: #{site_id}.") && empty_report
-      log_message("New vulnerabilities found in new scan for site #{site_id}, preparing tickets.") unless empty_report
-      unless empty_report
-        ticket = helper.prepare_tickets(new_scan_vuln)
-        helper.create_ticket(ticket)
+        if helper.respond_to?("prepare_update_tickets") && helper.respond_to?("update_tickets")
+          tickets = helper.prepare_update_tickets(all_scan_vuln)
+          helper.update_tickets(tickets)
+        else
+          log_message("Helper does not implement update methods")
+          fail "Helper using 'I' mode must implement prepare_updates and update_tickets"
+        end
+      else
+        # D-mode tickets require creating new tickets and closing old tickets.
+        new_scan_vuln = ticket_repository.new_vulns_sites(scan_id: file_site_histories[site_id], site_id: site_id,
+                                                          severity: options[:severity])
+        preparse = CSV.new(new_scan_vuln.chomp, headers: :first_row)
+        empty_report = preparse.shift.nil?
+        log_message("No new vulnerabilities found in new scan for site: #{site_id}.") if empty_report
+        log_message("New vulnerabilities found in new scan for site #{site_id}, preparing tickets.") unless empty_report
+        unless empty_report
+          tickets = helper.prepare_create_tickets(new_scan_vuln)
+          helper.create_tickets(tickets)
+        end
+        
+        if helper.respond_to?("prepare_close_tickets") && helper.respond_to?("close_tickets")
+          old_scan_vuln = ticket_repository.old_vulns_sites(scan_id: file_site_histories[site_id], site_id: site_id,
+                                                            severity: options[:severity])
+          preparse = CSV.new(old_scan_vuln.chomp, headers: :first_row)
+          empty_report = preparse.shift.nil?
+          log_message("No old (closed) vulnerabilities found in new scan for site: #{site_id}.") if empty_report
+          log_message("Old vulnerabilities found in new scan for site #{site_id}, preparing closures.") unless empty_report
+          unless empty_report
+            tickets = helper.prepare_close_tickets(old_scan_vuln)
+            helper.close_tickets(tickets)
+          end
+        else
+          # Create a log message but do not halt execution of the helper if ticket closeing is not 
+          # supported to allow legacy code to execute normally.
+          log_message("Helper does not impelment close methods.")
+        end
       end
     end
 
