@@ -7,11 +7,11 @@ REMEDY_CONFIG_PATH = File.join(File.dirname(__FILE__),
                                    '../lib/nexpose_ticketing/config/remedy.config')
 
 # Read in ServiceNow options from servicenow.config
-rememdy_options = begin
+remedy_options = begin
   YAML.load_file(REMEDY_CONFIG_PATH)
 rescue ArgumentError => e
   raise "Could not parse YAML #{REMEDY_CONFIG_PATH} : #{e.message}"
 end
 
 # Initialize Nexpose Ticket Service using Remedy
-NexposeTicketing.start(rememdy_options)
+NexposeTicketing.start(remedy_options)
