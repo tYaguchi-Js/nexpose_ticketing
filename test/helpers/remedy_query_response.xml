@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:s0="urn:HPD_IncidentInterface_WS" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ins0="http://tempuri.org">
+  <env:Header>
+    <AuthenticationInfo>
+      <userName>test</userName>
+      <password>testpassword</password>
+      <authentication></authentication>
+    </AuthenticationInfo>
+  </env:Header>
+  <env:Body>
+    <s0:HelpDesk_Modify_Service>
+      <s0:Categorization_Tier_1/>
+      <s0:Categorization_Tier_2/>
+      <s0:Categorization_Tier_3/>
+      <s0:Closure_Manufacturer xsi:nil="true"/>
+      <s0:Closure_Product_Category_Tier1 xsi:nil="true"/>
+      <s0:Closure_Product_Category_Tier2 xsi:nil="true"/>
+      <s0:Closure_Product_Category_Tier3 xsi:nil="true"/>
+      <s0:Closure_Product_Model_Version xsi:nil="true"/>
+      <s0:Closure_Product_Name xsi:nil="true"/>
+      <s0:Company xsi:nil="true"/>
+      <s0:Summary>127.0.0.1 =&gt; vuln</s0:Summary>
+      <s0:Notes>++ Old Vulnerabilities +++++++++++++++++++++++++++++++++++++
+
+++ Same Vulnerabilities +++++++++++++++++++++++++++++++++++++
+
+URL: http://support.microsoft.com/kb/2909210
+URL: http://support.microsoft.com/kb/2892074
+
+NXID: 127.0.0.1</s0:Notes>
+      <s0:Impact>1-Extensive/Widespread</s0:Impact>
+      <s0:Manufacturer xsi:nil="true"/>
+      <s0:Product_Categorization_Tier_1 xsi:nil="true"/>
+      <s0:Product_Categorization_Tier_2 xsi:nil="true"/>
+      <s0:Product_Categorization_Tier_3 xsi:nil="true"/>
+      <s0:Product_Model_Version xsi:nil="true"/>
+      <s0:Product_Name xsi:nil="true"/>
+      <s0:Reported_Source>Direct Input</s0:Reported_Source>
+      <s0:Resolution xsi:nil="true"/>
+      <s0:Resolution_Category xsi:nil="true"/>
+      <s0:Resolution_Category_Tier_2 xsi:nil="true"/>
+      <s0:Resolution_Category_Tier_3 xsi:nil="true"/>
+      <s0:Resolution_Method xsi:nil="true"/>
+      <s0:Service_Type>User Service Restoration</s0:Service_Type>
+      <s0:Status>Assigned</s0:Status>
+      <s0:Urgency>1-Critical</s0:Urgency>
+      <s0:Action>MODIFY</s0:Action>
+      <s0:Work_Info_Summary xsi:nil="true"/>
+      <s0:Work_Info_Notes xsi:nil="true"/>
+      <s0:Work_Info_Type xsi:nil="true"/>
+      <s0:Work_Info_Date xsi:nil="true"/>
+      <s0:Work_Info_Source xsi:nil="true"/>
+      <s0:Work_Info_Locked xsi:nil="true"/>
+      <s0:Work_Info_View_Access xsi:nil="true"/>
+      <s0:Incident_Number>INC000000000098</s0:Incident_Number>
+      <s0:Status_Reason>Infrastructure Change Created</s0:Status_Reason>
+      <s0:ServiceCI xsi:nil="true"/>
+      <s0:ServiceCI_ReconID xsi:nil="true"/>
+      <s0:HPD_CI xsi:nil="true"/>
+      <s0:HPD_CI_ReconID xsi:nil="true"/>
+      <s0:HPD_CI_FormName/>
+      <s0:z1D_CI_FormName/>
+    </s0:HelpDesk_Modify_Service>
+  </env:Body>
+</env:Envelope>
+
