@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<unload unload_date="2014-04-08 18:08:57">
+<sys_remote_update_set action="INSERT_OR_UPDATE">
+<collisions/>
+<commit_date/>
+<deleted/>
+<description>Rapid7 Nexpose Ticketing Integration.
+
+Support Email: integrations_support@rapid7.com
+Support Phone: (866) 390-8113
+</description>
+<inserted/>
+<name>Rapid7 Nexpose Ticketing</name>
+<origin_sys_id/>
+<release_date>2014-04-08 18:02:17</release_date>
+<remote_sys_id>06382388340c6140df776b3ac83c75d9</remote_sys_id>
+<state>loaded</state>
+<summary/>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>1fe9af88340c6140df776b3ac83c7535</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<target_release>5c668567404bc1003f8e0fc5040a3290</target_release>
+<update_set display_value=""/>
+<update_source display_value=""/>
+<updated/>
+<vendor_key>rpd</vendor_key>
+<version>glide-calgary-02-15-2013__patch2-hotfix5</version>
+</sys_remote_update_set>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_transform_map_7b19ab88340c6140df776b3ac83c7591</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_transform_map"><sys_transform_map action="INSERT_OR_UPDATE"><active>true</active><copy_empty_fields>false</copy_empty_fields><enforce_mandatory_fields>No</enforce_mandatory_fields><name>Vulnerabilities to Tickets</name><order>100</order><run_business_rules>true</run_business_rules><run_script>false</run_script><script><![CDATA[/**
+ * For variables go to: http://wiki.service-now.com/index.php?title=Import_Sets
+ **/ 
+]]]]><![CDATA[></script><source_table>u_rpd_vulnerabilities</source_table><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:05:49</sys_created_on><sys_id>7b19ab88340c6140df776b3ac83c7591</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:05:49</sys_updated_on><target_table>incident</target_table></sys_transform_map><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1$,/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:05:49</sys_created_on><sys_id>95396748340c6140df776b3ac83c7574</sys_id><sys_mod_count>0</sys_mod_count><sys_name>Vulnerabilities to Tickets</sys_name><sys_parent/><sys_path>!!1$,/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>7b19ab88340c6140df776b3ac83c7591</sys_source_id><sys_source_table>sys_transform_map</sys_source_table><sys_type/><sys_update_name>sys_transform_map_7b19ab88340c6140df776b3ac83c7591</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:05:49</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>13e9af88340c6140df776b3ac83c7539</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table/>
+<target_name>Vulnerabilities to Tickets</target_name>
+<type>Table Transform Map</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_transform_entry_7369eb88340c6140df776b3ac83c7537</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_transform_entry"><sys_transform_entry action="INSERT_OR_UPDATE"><choice_action>create</choice_action><coalesce>false</coalesce><coalesce_case_sensitive>false</coalesce_case_sensitive><coalesce_empty_fields>false</coalesce_empty_fields><date_format>yyyy-MM-dd hh:mm:ss</date_format><map display_value="Vulnerabilities to Tickets">7b19ab88340c6140df776b3ac83c7591</map><reference_value_field/><source_field>u_caller_id</source_field><source_script/><source_table>u_rpd_vulnerabilities</source_table><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>7369eb88340c6140df776b3ac83c7537</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on><target_field>caller_id</target_field><target_table>incident</target_table><use_source_script>false</use_source_script></sys_transform_entry><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1$3/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>bb69eb88340c6140df776b3ac83c7537</sys_id><sys_mod_count>0</sys_mod_count><sys_name>7369eb88340c6140df776b3ac83c7537</sys_name><sys_parent/><sys_path>!!1$3/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>7369eb88340c6140df776b3ac83c7537</sys_source_id><sys_source_table>sys_transform_entry</sys_source_table><sys_type/><sys_update_name>sys_transform_entry_7369eb88340c6140df776b3ac83c7537</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>17e9af88340c6140df776b3ac83c7538</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table/>
+<target_name>7369eb88340c6140df776b3ac83c7537</target_name>
+<type>Field Map</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_dictionary_u_rpd_vulnerabilities_u_urgency</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update><sys_dictionary action="INSERT" element="u_urgency" table="u_rpd_vulnerabilities"><active>true</active><array>false</array><attributes/><audit>false</audit><calculation/><choice/><choice_field/><choice_table/><column_label>urgency</column_label><comments/><create_roles/><default_value/><defaultsort/><delete_roles/><dependent/><display>false</display><dynamic_creation>false</dynamic_creation><dynamic_creation_script/><element>u_urgency</element><element_reference>false</element_reference><foreign_database/><internal_type display_value="Integer">integer</internal_type><mandatory>false</mandatory><max_length>40</max_length><name>u_rpd_vulnerabilities</name><next_element/><primary>false</primary><read_only>false</read_only><read_roles/><reference/><reference_cascade_rule/><reference_floats>false</reference_floats><reference_key/><reference_qual/><reference_type/><sizeclass/><spell_check>false</spell_check><sys_class_name>sys_dictionary</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:04:57</sys_created_on><sys_id>a33d099634735140df776b3ac83c759d</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:57</sys_updated_on><table_reference>false</table_reference><text_index>false</text_index><unique>false</unique><virtual>false</virtual><widget/><write_roles/><xml_view>false</xml_view></sys_dictionary><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1#N/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-02 20:15:33</sys_created_on><sys_id>175d499634735140df776b3ac83c752f</sys_id><sys_mod_count>0</sys_mod_count><sys_name>urgency</sys_name><sys_parent display_value="Rpd Vulnerabilities">2a1dc59634735140df776b3ac83c75ae</sys_parent><sys_path>!!1#C/!!1#N/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id element="u_urgency" name="u_rpd_vulnerabilities" sys_source_table="sys_dictionary">a33d099634735140df776b3ac83c759d</sys_source_id><sys_source_table>sys_dictionary</sys_source_table><sys_type>code</sys_type><sys_update_name>sys_dictionary_u_rpd_vulnerabilities_u_urgency</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:57</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>1be9af88340c6140df776b3ac83c7537</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table>u_rpd_vulnerabilities</table>
+<target_name>Vulnerabilities.u_urgency</target_name>
+<type>Dictionary</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_dictionary_u_rpd_vulnerabilities_u_caller_id</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update><sys_dictionary action="INSERT" element="u_caller_id" table="u_rpd_vulnerabilities"><active>true</active><array>false</array><attributes/><audit>false</audit><calculation/><choice/><choice_field/><choice_table/><column_label>caller_id</column_label><comments/><create_roles/><default_value/><defaultsort/><delete_roles/><dependent/><display>false</display><dynamic_creation>false</dynamic_creation><dynamic_creation_script/><element>u_caller_id</element><element_reference>false</element_reference><foreign_database/><internal_type display_value="String">string</internal_type><mandatory>false</mandatory><max_length>40</max_length><name>u_rpd_vulnerabilities</name><next_element/><primary>false</primary><read_only>false</read_only><read_roles/><reference/><reference_cascade_rule/><reference_floats>false</reference_floats><reference_key/><reference_qual/><reference_type/><sizeclass/><spell_check>false</spell_check><sys_class_name>sys_dictionary</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:04:59</sys_created_on><sys_id>d72d099634735140df776b3ac83c7592</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:59</sys_updated_on><table_reference>false</table_reference><text_index>false</text_index><unique>false</unique><virtual>false</virtual><widget/><write_roles/><xml_view>false</xml_view></sys_dictionary><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1#F/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-02 20:15:32</sys_created_on><sys_id>0f5d499634735140df776b3ac83c7502</sys_id><sys_mod_count>0</sys_mod_count><sys_name>caller_id</sys_name><sys_parent display_value="Rpd Vulnerabilities">2a1dc59634735140df776b3ac83c75ae</sys_parent><sys_path>!!1#C/!!1#F/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id element="u_caller_id" name="u_rpd_vulnerabilities" sys_source_table="sys_dictionary">d72d099634735140df776b3ac83c7592</sys_source_id><sys_source_table>sys_dictionary</sys_source_table><sys_type>code</sys_type><sys_update_name>sys_dictionary_u_rpd_vulnerabilities_u_caller_id</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:59</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>1fe9af88340c6140df776b3ac83c7536</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table>u_rpd_vulnerabilities</table>
+<target_name>Vulnerabilities.u_caller_id</target_name>
+<type>Dictionary</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_transform_entry_3f69a788340c6140df776b3ac83c752f</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_transform_entry"><sys_transform_entry action="INSERT_OR_UPDATE"><choice_action>create</choice_action><coalesce>false</coalesce><coalesce_case_sensitive>false</coalesce_case_sensitive><coalesce_empty_fields>false</coalesce_empty_fields><date_format>yyyy-MM-dd hh:mm:ss</date_format><map display_value="Vulnerabilities to Tickets">7b19ab88340c6140df776b3ac83c7591</map><reference_value_field/><source_field>u_urgency</source_field><source_script/><source_table>u_rpd_vulnerabilities</source_table><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>3f69a788340c6140df776b3ac83c752f</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on><target_field>urgency</target_field><target_table>incident</target_table><use_source_script>false</use_source_script></sys_transform_entry><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1$./</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>7769a788340c6140df776b3ac83c7530</sys_id><sys_mod_count>0</sys_mod_count><sys_name>3f69a788340c6140df776b3ac83c752f</sys_name><sys_parent/><sys_path>!!1$./</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>3f69a788340c6140df776b3ac83c752f</sys_source_id><sys_source_table>sys_transform_entry</sys_source_table><sys_type/><sys_update_name>sys_transform_entry_3f69a788340c6140df776b3ac83c752f</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>53e9af88340c6140df776b3ac83c7538</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table/>
+<target_name>3f69a788340c6140df776b3ac83c752f</target_name>
+<type>Field Map</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_dictionary_u_rpd_vulnerabilities_u_short_description</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update><sys_dictionary action="INSERT" element="u_short_description" table="u_rpd_vulnerabilities"><active>true</active><array>false</array><attributes/><audit>false</audit><calculation/><choice/><choice_field/><choice_table/><column_label>short_description</column_label><comments/><create_roles/><default_value/><defaultsort/><delete_roles/><dependent/><display>false</display><dynamic_creation>false</dynamic_creation><dynamic_creation_script/><element>u_short_description</element><element_reference>false</element_reference><foreign_database/><internal_type display_value="String">string</internal_type><mandatory>false</mandatory><max_length>40</max_length><name>u_rpd_vulnerabilities</name><next_element/><primary>false</primary><read_only>false</read_only><read_roles/><reference/><reference_cascade_rule/><reference_floats>false</reference_floats><reference_key/><reference_qual/><reference_type/><sizeclass/><spell_check>false</spell_check><sys_class_name>sys_dictionary</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:04:57</sys_created_on><sys_id>6e3d099634735140df776b3ac83c759a</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:57</sys_updated_on><table_reference>false</table_reference><text_index>false</text_index><unique>false</unique><virtual>false</virtual><widget/><write_roles/><xml_view>false</xml_view></sys_dictionary><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1#L/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-02 20:15:33</sys_created_on><sys_id>575d499634735140df776b3ac83c7524</sys_id><sys_mod_count>0</sys_mod_count><sys_name>short_description</sys_name><sys_parent display_value="Rpd Vulnerabilities">2a1dc59634735140df776b3ac83c75ae</sys_parent><sys_path>!!1#C/!!1#L/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id element="u_short_description" name="u_rpd_vulnerabilities" sys_source_table="sys_dictionary">6e3d099634735140df776b3ac83c759a</sys_source_id><sys_source_table>sys_dictionary</sys_source_table><sys_type>code</sys_type><sys_update_name>sys_dictionary_u_rpd_vulnerabilities_u_short_description</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:58</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>57e9af88340c6140df776b3ac83c7537</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table>u_rpd_vulnerabilities</table>
+<target_name>Vulnerabilities.u_short_description</target_name>
+<type>Dictionary</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_app_module_eea92f88340c6140df776b3ac83c75ff</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_app_module"><sys_app_module action="INSERT_OR_UPDATE"><active>true</active><application display_value="Rapid7 Nexpose Support">6f89eb88340c6140df776b3ac83c75e5</application><content_page/><filter/><hint>Nexpose Support</hint><homepage/><image/><link_type>DIRECT</link_type><map_page/><name/><order/><query>http://www.rapid7.com/support/</query><report/><roles>admin</roles><survey/><survey_overwrite>true</survey_overwrite><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:08:18</sys_created_on><sys_domain>global</sys_domain><sys_id>eea92f88340c6140df776b3ac83c75ff</sys_id><sys_mod_count>0</sys_mod_count><sys_overrides/><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:08:18</sys_updated_on><timeline_page/><title>Nexpose Support</title><uncancelable>false</uncancelable><view_name/><window_name/></sys_app_module><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1$5/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:08:18</sys_created_on><sys_id>f5c9eb48340c6140df776b3ac83c75e4</sys_id><sys_mod_count>0</sys_mod_count><sys_name>Nexpose Support</sys_name><sys_parent/><sys_path>!!1$5/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>eea92f88340c6140df776b3ac83c75ff</sys_source_id><sys_source_table>sys_app_module</sys_source_table><sys_type>code</sys_type><sys_update_name>sys_app_module_eea92f88340c6140df776b3ac83c75ff</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:08:18</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>5be9af88340c6140df776b3ac83c7536</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table/>
+<target_name>Nexpose Support</target_name>
+<type>Module</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_transform_entry_ff69eb88340c6140df776b3ac83c7533</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_transform_entry"><sys_transform_entry action="INSERT_OR_UPDATE"><choice_action>create</choice_action><coalesce>false</coalesce><coalesce_case_sensitive>false</coalesce_case_sensitive><coalesce_empty_fields>false</coalesce_empty_fields><date_format>yyyy-MM-dd hh:mm:ss</date_format><map display_value="Vulnerabilities to Tickets">7b19ab88340c6140df776b3ac83c7591</map><reference_value_field/><source_field>u_impact</source_field><source_script/><source_table>u_rpd_vulnerabilities</source_table><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>ff69eb88340c6140df776b3ac83c7533</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on><target_field>impact</target_field><target_table>incident</target_table><use_source_script>false</use_source_script></sys_transform_entry><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1$1/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>3b69eb88340c6140df776b3ac83c7534</sys_id><sys_mod_count>0</sys_mod_count><sys_name>ff69eb88340c6140df776b3ac83c7533</sys_name><sys_parent/><sys_path>!!1$1/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>ff69eb88340c6140df776b3ac83c7533</sys_source_id><sys_source_table>sys_transform_entry</sys_source_table><sys_type/><sys_update_name>sys_transform_entry_ff69eb88340c6140df776b3ac83c7533</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>5fe9af88340c6140df776b3ac83c7538</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table/>
+<target_name>ff69eb88340c6140df776b3ac83c7533</target_name>
+<type>Field Map</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_dictionary_u_rpd_vulnerabilities_u_impact</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update><sys_dictionary action="INSERT" element="u_impact" table="u_rpd_vulnerabilities"><active>true</active><array>false</array><attributes/><audit>false</audit><calculation/><choice/><choice_field/><choice_table/><column_label>impact</column_label><comments/><create_roles/><default_value/><defaultsort/><delete_roles/><dependent/><display>false</display><dynamic_creation>false</dynamic_creation><dynamic_creation_script/><element>u_impact</element><element_reference>false</element_reference><foreign_database/><internal_type display_value="Integer">integer</internal_type><mandatory>false</mandatory><max_length>40</max_length><name>u_rpd_vulnerabilities</name><next_element/><primary>false</primary><read_only>false</read_only><read_roles/><reference/><reference_cascade_rule/><reference_floats>false</reference_floats><reference_key/><reference_qual/><reference_type/><sizeclass/><spell_check>false</spell_check><sys_class_name>sys_dictionary</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:04:58</sys_created_on><sys_id>0a3d099634735140df776b3ac83c7598</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:58</sys_updated_on><table_reference>false</table_reference><text_index>false</text_index><unique>false</unique><virtual>false</virtual><widget/><write_roles/><xml_view>false</xml_view></sys_dictionary><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1#J/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-02 20:15:33</sys_created_on><sys_id>475d499634735140df776b3ac83c7519</sys_id><sys_mod_count>0</sys_mod_count><sys_name>impact</sys_name><sys_parent display_value="Rpd Vulnerabilities">2a1dc59634735140df776b3ac83c75ae</sys_parent><sys_path>!!1#C/!!1#J/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id element="u_impact" name="u_rpd_vulnerabilities" sys_source_table="sys_dictionary">0a3d099634735140df776b3ac83c7598</sys_source_id><sys_source_table>sys_dictionary</sys_source_table><sys_type>code</sys_type><sys_update_name>sys_dictionary_u_rpd_vulnerabilities_u_impact</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:58</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>93e9af88340c6140df776b3ac83c7537</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table>u_rpd_vulnerabilities</table>
+<target_name>Vulnerabilities.u_impact</target_name>
+<type>Dictionary</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_app_application_6f89eb88340c6140df776b3ac83c75e5</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_app_application"><sys_app_application action="INSERT_OR_UPDATE"><active>true</active><category display_value="Custom Applications">e0355b31ef303000a61d5a3615c0fb78</category><description>Rapid7 Nexpose Ticketing Integration.&#13;
+&#13;
+Support Email: integrations_support@rapid7.com&#13;
+Support Phone: (866) 390-8113</description><device_type>browser</device_type><hint>Rapid7 Nexpose Support</hint><name>rapid7_nexpose_support</name><order>100</order><roles>admin</roles><sys_app_file/><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:07:38</sys_created_on><sys_domain>global</sys_domain><sys_id>6f89eb88340c6140df776b3ac83c75e5</sys_id><sys_mod_count>0</sys_mod_count><sys_overrides/><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:07:38</sys_updated_on><title>Rapid7 Nexpose Support</title><view_name/></sys_app_application><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1$4/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:07:38</sys_created_on><sys_id>f399eb88340c6140df776b3ac83c75ed</sys_id><sys_mod_count>0</sys_mod_count><sys_name>Rapid7 Nexpose Support</sys_name><sys_parent/><sys_path>!!1$4/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>6f89eb88340c6140df776b3ac83c75e5</sys_source_id><sys_source_table>sys_app_application</sys_source_table><sys_type>code</sys_type><sys_update_name>sys_app_application_6f89eb88340c6140df776b3ac83c75e5</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:07:38</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>97e9af88340c6140df776b3ac83c7536</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table/>
+<target_name>Rapid7 Nexpose Support</target_name>
+<type>Application Menu</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_transform_entry_af69a788340c6140df776b3ac83c752d</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_transform_entry"><sys_transform_entry action="INSERT_OR_UPDATE"><choice_action>create</choice_action><coalesce>false</coalesce><coalesce_case_sensitive>false</coalesce_case_sensitive><coalesce_empty_fields>false</coalesce_empty_fields><date_format>yyyy-MM-dd hh:mm:ss</date_format><map display_value="Vulnerabilities to Tickets">7b19ab88340c6140df776b3ac83c7591</map><reference_value_field/><source_field>u_work_notes</source_field><source_script/><source_table>u_rpd_vulnerabilities</source_table><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>af69a788340c6140df776b3ac83c752d</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on><target_field>work_notes</target_field><target_table>incident</target_table><use_source_script>false</use_source_script></sys_transform_entry><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1$-/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>6b69a788340c6140df776b3ac83c752e</sys_id><sys_mod_count>0</sys_mod_count><sys_name>af69a788340c6140df776b3ac83c752d</sys_name><sys_parent/><sys_path>!!1$-/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>af69a788340c6140df776b3ac83c752d</sys_source_id><sys_source_table>sys_transform_entry</sys_source_table><sys_type/><sys_update_name>sys_transform_entry_af69a788340c6140df776b3ac83c752d</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>9be9af88340c6140df776b3ac83c7538</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table/>
+<target_name>af69a788340c6140df776b3ac83c752d</target_name>
+<type>Field Map</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_transform_entry_3b69eb88340c6140df776b3ac83c7535</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_transform_entry"><sys_transform_entry action="INSERT_OR_UPDATE"><choice_action>create</choice_action><coalesce>false</coalesce><coalesce_case_sensitive>false</coalesce_case_sensitive><coalesce_empty_fields>false</coalesce_empty_fields><date_format>yyyy-MM-dd hh:mm:ss</date_format><map display_value="Vulnerabilities to Tickets">7b19ab88340c6140df776b3ac83c7591</map><reference_value_field/><source_field>u_category</source_field><source_script/><source_table>u_rpd_vulnerabilities</source_table><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>3b69eb88340c6140df776b3ac83c7535</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on><target_field>category</target_field><target_table>incident</target_table><use_source_script>false</use_source_script></sys_transform_entry><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1$2/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>7369eb88340c6140df776b3ac83c7536</sys_id><sys_mod_count>0</sys_mod_count><sys_name>3b69eb88340c6140df776b3ac83c7535</sys_name><sys_parent/><sys_path>!!1$2/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>3b69eb88340c6140df776b3ac83c7535</sys_source_id><sys_source_table>sys_transform_entry</sys_source_table><sys_type/><sys_update_name>sys_transform_entry_3b69eb88340c6140df776b3ac83c7535</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>9fe9af88340c6140df776b3ac83c7537</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table/>
+<target_name>3b69eb88340c6140df776b3ac83c7535</target_name>
+<type>Field Map</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>dictionary_u_rpd_vulnerabilities_55952fb42c46425d84de8f4fda4ce339</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update><database><element extends="sys_import_set_row" label="Vulnerabilities" name="u_rpd_vulnerabilities" type="collection"><element label="work_notes" max_length="40" name="u_work_notes" type="string"/><element label="urgency" max_length="40" name="u_urgency" type="integer"/><element label="short_description" max_length="40" name="u_short_description" type="string"/><element label="category" max_length="40" name="u_category" type="string"/><element label="impact" max_length="40" name="u_impact" type="integer"/><element label="caller_id" max_length="40" name="u_caller_id" type="string"/></element></database><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1#D/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-02 20:14:25</sys_created_on><sys_id>221dc59634735140df776b3ac83c75c2</sys_id><sys_mod_count>0</sys_mod_count><sys_name>u_rpd_vulnerabilities</sys_name><sys_parent display_value="Rpd Vulnerabilities">2a1dc59634735140df776b3ac83c75ae</sys_parent><sys_path>!!1#C/!!1#D/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id element="NULL" name="u_rpd_vulnerabilities" sys_source_table="sys_dictionary">ee1dc59634735140df776b3ac83c75c0</sys_source_id><sys_source_table>sys_dictionary</sys_source_table><sys_type>code</sys_type><sys_update_name>dictionary_u_rpd_vulnerabilities_55952fb42c46425d84de8f4fda4ce339</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:59</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>d3e9af88340c6140df776b3ac83c7536</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table>u_rpd_vulnerabilities</table>
+<target_name>Vulnerabilities</target_name>
+<type>Database field(s)</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_transform_entry_7769a788340c6140df776b3ac83c7531</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_transform_entry"><sys_transform_entry action="INSERT_OR_UPDATE"><choice_action>create</choice_action><coalesce>false</coalesce><coalesce_case_sensitive>false</coalesce_case_sensitive><coalesce_empty_fields>false</coalesce_empty_fields><date_format>yyyy-MM-dd hh:mm:ss</date_format><map display_value="Vulnerabilities to Tickets">7b19ab88340c6140df776b3ac83c7591</map><reference_value_field/><source_field>u_short_description</source_field><source_script/><source_table>u_rpd_vulnerabilities</source_table><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>7769a788340c6140df776b3ac83c7531</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on><target_field>short_description</target_field><target_table>incident</target_table><use_source_script>false</use_source_script></sys_transform_entry><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1$0/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:06:48</sys_created_on><sys_id>bf69a788340c6140df776b3ac83c7531</sys_id><sys_mod_count>0</sys_mod_count><sys_name>7769a788340c6140df776b3ac83c7531</sys_name><sys_parent/><sys_path>!!1$0/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>7769a788340c6140df776b3ac83c7531</sys_source_id><sys_source_table>sys_transform_entry</sys_source_table><sys_type/><sys_update_name>sys_transform_entry_7769a788340c6140df776b3ac83c7531</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:06:48</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>d7e9af88340c6140df776b3ac83c7538</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table/>
+<target_name>7769a788340c6140df776b3ac83c7531</target_name>
+<type>Field Map</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_dictionary_u_rpd_vulnerabilities_u_work_notes</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update><sys_dictionary action="INSERT" element="u_work_notes" table="u_rpd_vulnerabilities"><active>true</active><array>false</array><attributes/><audit>false</audit><calculation/><choice/><choice_field/><choice_table/><column_label>work_notes</column_label><comments/><create_roles/><default_value/><defaultsort/><delete_roles/><dependent/><display>false</display><dynamic_creation>false</dynamic_creation><dynamic_creation_script/><element>u_work_notes</element><element_reference>false</element_reference><foreign_database/><internal_type display_value="String">string</internal_type><mandatory>false</mandatory><max_length>40</max_length><name>u_rpd_vulnerabilities</name><next_element/><primary>false</primary><read_only>false</read_only><read_roles/><reference/><reference_cascade_rule/><reference_floats>false</reference_floats><reference_key/><reference_qual/><reference_type/><sizeclass/><spell_check>false</spell_check><sys_class_name>sys_dictionary</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:04:57</sys_created_on><sys_id>d04d099634735140df776b3ac83c75d1</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:57</sys_updated_on><table_reference>false</table_reference><text_index>false</text_index><unique>false</unique><virtual>false</virtual><widget/><write_roles/><xml_view>false</xml_view></sys_dictionary><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1#P/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-02 20:15:34</sys_created_on><sys_id>d35d499634735140df776b3ac83c753a</sys_id><sys_mod_count>0</sys_mod_count><sys_name>work_notes</sys_name><sys_parent display_value="Rpd Vulnerabilities">2a1dc59634735140df776b3ac83c75ae</sys_parent><sys_path>!!1#C/!!1#P/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id element="u_work_notes" name="u_rpd_vulnerabilities" sys_source_table="sys_dictionary">d04d099634735140df776b3ac83c75d1</sys_source_id><sys_source_table>sys_dictionary</sys_source_table><sys_type>code</sys_type><sys_update_name>sys_dictionary_u_rpd_vulnerabilities_u_work_notes</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:57</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>dbe9af88340c6140df776b3ac83c7537</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table>u_rpd_vulnerabilities</table>
+<target_name>Vulnerabilities.u_work_notes</target_name>
+<type>Dictionary</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT</action>
+<application display_value=""/>
+<category>customer</category>
+<comments/>
+<name>sys_dictionary_u_rpd_vulnerabilities_u_category</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update><sys_dictionary action="INSERT" element="u_category" table="u_rpd_vulnerabilities"><active>true</active><array>false</array><attributes/><audit>false</audit><calculation/><choice/><choice_field/><choice_table/><column_label>category</column_label><comments/><create_roles/><default_value/><defaultsort/><delete_roles/><dependent/><display>false</display><dynamic_creation>false</dynamic_creation><dynamic_creation_script/><element>u_category</element><element_reference>false</element_reference><foreign_database/><internal_type display_value="String">string</internal_type><mandatory>false</mandatory><max_length>40</max_length><name>u_rpd_vulnerabilities</name><next_element/><primary>false</primary><read_only>false</read_only><read_roles/><reference/><reference_cascade_rule/><reference_floats>false</reference_floats><reference_key/><reference_qual/><reference_type/><sizeclass/><spell_check>false</spell_check><sys_class_name>sys_dictionary</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-08 18:04:58</sys_created_on><sys_id>853d099634735140df776b3ac83c7595</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:58</sys_updated_on><table_reference>false</table_reference><text_index>false</text_index><unique>false</unique><virtual>false</virtual><widget/><write_roles/><xml_view>false</xml_view></sys_dictionary><sys_app_file action="INSERT_OR_UPDATE"><sys_app/><sys_code>!!1#H/</sys_code><sys_created_by>admin</sys_created_by><sys_created_on>2014-04-02 20:15:32</sys_created_on><sys_id>875d499634735140df776b3ac83c750e</sys_id><sys_mod_count>0</sys_mod_count><sys_name>category</sys_name><sys_parent display_value="Rpd Vulnerabilities">2a1dc59634735140df776b3ac83c75ae</sys_parent><sys_path>!!1#C/!!1#H/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id element="u_category" name="u_rpd_vulnerabilities" sys_source_table="sys_dictionary">853d099634735140df776b3ac83c7595</sys_source_id><sys_source_table>sys_dictionary</sys_source_table><sys_type>code</sys_type><sys_update_name>sys_dictionary_u_rpd_vulnerabilities_u_category</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2014-04-08 18:04:58</sys_updated_on></sys_app_file></record_update>]]></payload>
+<remote_update_set display_value="Rapid7 Nexpose Ticketing">1fe9af88340c6140df776b3ac83c7535</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2014-04-08 18:08:57</sys_created_on>
+<sys_id>dfe9af88340c6140df776b3ac83c7536</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2014-04-08 18:08:57</sys_updated_on>
+<table>u_rpd_vulnerabilities</table>
+<target_name>Vulnerabilities.u_category</target_name>
+<type>Dictionary</type>
+<update_domain>global</update_domain>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+</unload>
