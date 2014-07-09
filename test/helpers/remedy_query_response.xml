@@ -1,66 +1,66 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:s0="urn:HPD_IncidentInterface_WS" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ins0="http://tempuri.org">
-  <env:Header>
-    <AuthenticationInfo>
-      <userName>test</userName>
-      <password>testpassword</password>
-      <authentication></authentication>
-    </AuthenticationInfo>
-  </env:Header>
-  <env:Body>
-    <s0:HelpDesk_Modify_Service>
-      <s0:Categorization_Tier_1/>
-      <s0:Categorization_Tier_2/>
-      <s0:Categorization_Tier_3/>
-      <s0:Closure_Manufacturer xsi:nil="true"/>
-      <s0:Closure_Product_Category_Tier1 xsi:nil="true"/>
-      <s0:Closure_Product_Category_Tier2 xsi:nil="true"/>
-      <s0:Closure_Product_Category_Tier3 xsi:nil="true"/>
-      <s0:Closure_Product_Model_Version xsi:nil="true"/>
-      <s0:Closure_Product_Name xsi:nil="true"/>
-      <s0:Company xsi:nil="true"/>
-      <s0:Summary>127.0.0.1 =&gt; vuln</s0:Summary>
-      <s0:Notes>++ Old Vulnerabilities +++++++++++++++++++++++++++++++++++++
-
-++ Same Vulnerabilities +++++++++++++++++++++++++++++++++++++
-
-URL: http://support.microsoft.com/kb/2909210
-URL: http://support.microsoft.com/kb/2892074
-
-NXID: 127.0.0.1</s0:Notes>
-      <s0:Impact>1-Extensive/Widespread</s0:Impact>
-      <s0:Manufacturer xsi:nil="true"/>
-      <s0:Product_Categorization_Tier_1 xsi:nil="true"/>
-      <s0:Product_Categorization_Tier_2 xsi:nil="true"/>
-      <s0:Product_Categorization_Tier_3 xsi:nil="true"/>
-      <s0:Product_Model_Version xsi:nil="true"/>
-      <s0:Product_Name xsi:nil="true"/>
-      <s0:Reported_Source>Direct Input</s0:Reported_Source>
-      <s0:Resolution xsi:nil="true"/>
-      <s0:Resolution_Category xsi:nil="true"/>
-      <s0:Resolution_Category_Tier_2 xsi:nil="true"/>
-      <s0:Resolution_Category_Tier_3 xsi:nil="true"/>
-      <s0:Resolution_Method xsi:nil="true"/>
-      <s0:Service_Type>User Service Restoration</s0:Service_Type>
-      <s0:Status>Assigned</s0:Status>
-      <s0:Urgency>1-Critical</s0:Urgency>
-      <s0:Action>MODIFY</s0:Action>
-      <s0:Work_Info_Summary xsi:nil="true"/>
-      <s0:Work_Info_Notes xsi:nil="true"/>
-      <s0:Work_Info_Type xsi:nil="true"/>
-      <s0:Work_Info_Date xsi:nil="true"/>
-      <s0:Work_Info_Source xsi:nil="true"/>
-      <s0:Work_Info_Locked xsi:nil="true"/>
-      <s0:Work_Info_View_Access xsi:nil="true"/>
-      <s0:Incident_Number>INC000000000098</s0:Incident_Number>
-      <s0:Status_Reason>Infrastructure Change Created</s0:Status_Reason>
-      <s0:ServiceCI xsi:nil="true"/>
-      <s0:ServiceCI_ReconID xsi:nil="true"/>
-      <s0:HPD_CI xsi:nil="true"/>
-      <s0:HPD_CI_ReconID xsi:nil="true"/>
-      <s0:HPD_CI_FormName/>
-      <s0:z1D_CI_FormName/>
-    </s0:HelpDesk_Modify_Service>
-  </env:Body>
-</env:Envelope>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <soapenv:Body>
+      <ns0:HelpDesk_QueryList_ServiceResponse xmlns:ns0="urn:HPD_IncidentInterface_WS">
+         <ns0:getListValues>
+            <ns0:Assigned_Group>Service Desk</ns0:Assigned_Group>
+            <ns0:Assigned_Support_Company>Calbro Services</ns0:Assigned_Support_Company>
+            <ns0:Assigned_Support_Organization>IT Support</ns0:Assigned_Support_Organization>
+            <ns0:Assignee>Mary Mann</ns0:Assignee>
+            <ns0:Categorization_Tier_1/>
+            <ns0:Categorization_Tier_2/>
+            <ns0:Categorization_Tier_3/>
+            <ns0:City>New York</ns0:City>
+            <ns0:Closure_Manufacturer/>
+            <ns0:Closure_Product_Category_Tier1/>
+            <ns0:Closure_Product_Category_Tier2/>
+            <ns0:Closure_Product_Category_Tier3/>
+            <ns0:Closure_Product_Model_Version/>
+            <ns0:Closure_Product_Name/>
+            <ns0:Company>Calbro Services</ns0:Company>
+            <ns0:Contact_Company>Calbro Services</ns0:Contact_Company>
+            <ns0:Contact_Sensitivity>Standard</ns0:Contact_Sensitivity>
+            <ns0:Country>United States</ns0:Country>
+            <ns0:Department>Customer Service</ns0:Department>
+            <ns0:Summary>WS Test Ticket #2</ns0:Summary>
+            <ns0:Notes>WS Test notes #2/nThis is a line break!</ns0:Notes>
+            <ns0:First_Name>Francie</ns0:First_Name>
+            <ns0:Impact>1-Extensive/Widespread</ns0:Impact>
+            <ns0:Incident_Number>INC000000000006</ns0:Incident_Number>
+            <ns0:Internet_E-mail>F.Stafford@calbroservices.com</ns0:Internet_E-mail>
+            <ns0:Last_Name>Stafford</ns0:Last_Name>
+            <ns0:Manufacturer/>
+            <ns0:Middle_Initial/>
+            <ns0:Organization>Information Technology</ns0:Organization>
+            <ns0:Phone_Number>1 212 555-5454 (55)</ns0:Phone_Number>
+            <ns0:Priority>Critical</ns0:Priority>
+            <ns0:Priority_Weight>29</ns0:Priority_Weight>
+            <ns0:Product_Categorization_Tier_1/>
+            <ns0:Product_Categorization_Tier_3/>
+            <ns0:Product_Model_Version/>
+            <ns0:Product_Name/>
+            <ns0:Region>Americas</ns0:Region>
+            <ns0:Reported_Source>Other</ns0:Reported_Source>
+            <ns0:Resolution/>
+            <ns0:Resolution_Category/>
+            <ns0:Resolution_Category_Tier_2/>
+            <ns0:Resolution_Category_Tier_3/>
+            <ns0:Service_Type>Infrastructure Event</ns0:Service_Type>
+            <ns0:Site>Headquarters, Building 1.31</ns0:Site>
+            <ns0:Site_Group>United States</ns0:Site_Group>
+            <ns0:Status>Assigned</ns0:Status>
+            <ns0:Status_Reason xsi:nil="true">Infrastructure Change Created</ns0:Status_Reason>
+            <ns0:Urgency>1-Critical</ns0:Urgency>
+            <ns0:VIP>No</ns0:VIP>
+            <ns0:ServiceCI/>
+            <ns0:ServiceCI_ReconID/>
+            <ns0:HPD_CI/>
+            <ns0:HPD_CI_ReconID/>
+            <ns0:HPD_CI_FormName/>
+            <ns0:z1D_CI_FormName/>
+            <ns0:Reported_Date>2014-06-24T12:11:12-07:00</ns0:Reported_Date>
+            <ns0:Submit_Date>2014-06-24T12:11:12-07:00</ns0:Submit_Date>
+         </ns0:getListValues>
+       </ns0:HelpDesk_QueryList_ServiceResponse>
+   </soapenv:Body>
+</soapenv:Envelope>
 
