@@ -1,0 +1,66 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <soapenv:Body>
+      <ns0:HelpDesk_QueryList_ServiceResponse xmlns:ns0="urn:HPD_IncidentInterface_WS">
+         <ns0:getListValues>
+            <ns0:Assigned_Group>Service Desk</ns0:Assigned_Group>
+            <ns0:Assigned_Support_Company>Calbro Services</ns0:Assigned_Support_Company>
+            <ns0:Assigned_Support_Organization>IT Support</ns0:Assigned_Support_Organization>
+            <ns0:Assignee>Mary Mann</ns0:Assignee>
+            <ns0:Categorization_Tier_1/>
+            <ns0:Categorization_Tier_2/>
+            <ns0:Categorization_Tier_3/>
+            <ns0:City>New York</ns0:City>
+            <ns0:Closure_Manufacturer/>
+            <ns0:Closure_Product_Category_Tier1/>
+            <ns0:Closure_Product_Category_Tier2/>
+            <ns0:Closure_Product_Category_Tier3/>
+            <ns0:Closure_Product_Model_Version/>
+            <ns0:Closure_Product_Name/>
+            <ns0:Company>Calbro Services</ns0:Company>
+            <ns0:Contact_Company>Calbro Services</ns0:Contact_Company>
+            <ns0:Contact_Sensitivity>Standard</ns0:Contact_Sensitivity>
+            <ns0:Country>United States</ns0:Country>
+            <ns0:Department>Customer Service</ns0:Department>
+            <ns0:Summary>WS Test Ticket #2</ns0:Summary>
+            <ns0:Notes>WS Test notes #2/nThis is a line break!</ns0:Notes>
+            <ns0:First_Name>Francie</ns0:First_Name>
+            <ns0:Impact>1-Extensive/Widespread</ns0:Impact>
+            <ns0:Incident_Number>INC000000000006</ns0:Incident_Number>
+            <ns0:Internet_E-mail>F.Stafford@calbroservices.com</ns0:Internet_E-mail>
+            <ns0:Last_Name>Stafford</ns0:Last_Name>
+            <ns0:Manufacturer/>
+            <ns0:Middle_Initial/>
+            <ns0:Organization>Information Technology</ns0:Organization>
+            <ns0:Phone_Number>1 212 555-5454 (55)</ns0:Phone_Number>
+            <ns0:Priority>Critical</ns0:Priority>
+            <ns0:Priority_Weight>29</ns0:Priority_Weight>
+            <ns0:Product_Categorization_Tier_1/>
+            <ns0:Product_Categorization_Tier_3/>
+            <ns0:Product_Model_Version/>
+            <ns0:Product_Name/>
+            <ns0:Region>Americas</ns0:Region>
+            <ns0:Reported_Source>Other</ns0:Reported_Source>
+            <ns0:Resolution/>
+            <ns0:Resolution_Category/>
+            <ns0:Resolution_Category_Tier_2/>
+            <ns0:Resolution_Category_Tier_3/>
+            <ns0:Service_Type>Infrastructure Event</ns0:Service_Type>
+            <ns0:Site>Headquarters, Building 1.31</ns0:Site>
+            <ns0:Site_Group>United States</ns0:Site_Group>
+            <ns0:Status>Assigned</ns0:Status>
+            <ns0:Status_Reason xsi:nil="true">Infrastructure Change Created</ns0:Status_Reason>
+            <ns0:Urgency>1-Critical</ns0:Urgency>
+            <ns0:VIP>No</ns0:VIP>
+            <ns0:ServiceCI/>
+            <ns0:ServiceCI_ReconID/>
+            <ns0:HPD_CI/>
+            <ns0:HPD_CI_ReconID/>
+            <ns0:HPD_CI_FormName/>
+            <ns0:z1D_CI_FormName/>
+            <ns0:Reported_Date>2014-06-24T12:11:12-07:00</ns0:Reported_Date>
+            <ns0:Submit_Date>2014-06-24T12:11:12-07:00</ns0:Submit_Date>
+         </ns0:getListValues>
+       </ns0:HelpDesk_QueryList_ServiceResponse>
+   </soapenv:Body>
+</soapenv:Envelope>
+
