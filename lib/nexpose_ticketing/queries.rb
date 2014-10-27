@@ -28,8 +28,8 @@ module NexposeTicketing
             SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
               FROM dim_asset) s
               ON s.asset_id = fasv.asset_id AND (fasv.scan_id = s.baseline_scan OR fasv.scan_id = s.current_scan)
-              GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
-              HAVING baselineComparison(fasv.scan_id, current_scan) = 'New'
+              GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan, fasv.scan_id
+              HAVING NOT baselineComparison(fasv.scan_id, current_scan) = 'Old'
           ) subs
         JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
         JOIN dim_solution ds USING (solution_id)

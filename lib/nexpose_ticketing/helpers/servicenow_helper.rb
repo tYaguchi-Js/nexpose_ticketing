@@ -176,7 +176,7 @@ class ServiceNowHelper
     tickets = []
     current_ip = -1
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
-      if current_ip == -1 
+      if current_ip == -1
         current_ip = row['ip_address']
         @log.log_message("Creating ticket with IP address: #{row['ip_address']}")
         @ticket = {
@@ -187,24 +187,25 @@ class ServiceNowHelper
           'urgency' => '1',
           'short_description' => "#{row['ip_address']} => Vulnerabilities",
           'work_notes' => "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                           ++ New Vulnerabilities +++++++++++++++++++++++++++++++++++++
+                           ++ New Vulnerabilities ++++++++++++++++++++++++++++++++++++
                            +++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n"
         }
       end
       if current_ip == row['ip_address']
         @ticket['work_notes'] += 
-          "==========================================
+          "\n\n==========================================
           Summary: #{row['summary']}
           ----------------------------------------------------------------------------
           Fix: #{row['fix']}"
         unless row['url'].nil?
           @ticket['work_notes'] += 
-            "----------------------------------------------------------------------------
+            "\n----------------------------------------------------------------------------
              URL: #{row['url']}"
         end
       end
       unless current_ip == row['ip_address']
         # NXID in the work_notes is the unique identifier used to query incidents to update them.
+        @log.log_message("Found new IP address. Finishing ticket with with IP address: #{current_ip} and moving onto IP #{row['ip_address']}")
         @ticket['work_notes'] += "\nNXID: #{current_ip}"
         @ticket = @ticket.to_json
         tickets.push(@ticket)
@@ -213,7 +214,7 @@ class ServiceNowHelper
       end
     end
     # NXID in the work_notes is the unique identifier used to query incidents to update them.
-    @ticket['work_notes'] += "\nNXID: #{current_ip}"
+    @ticket['work_notes'] += "\nNXID: #{current_ip}" unless (@ticket.size == 0)
     tickets.push(@ticket.to_json) unless @ticket.nil?
     tickets
   end
@@ -242,8 +243,12 @@ class ServiceNowHelper
         ticket_status = row['comparison']
         @log.log_message("Creating ticket update with IP address: #{row['ip_address']}")
         @log.log_message("Ticket status #{ticket_status}")
+        action =  'update'
+        if ticket_status == 'New'
+          action =  'insert'
+        end
         @ticket = {
-          'sysparm_action' => 'update',
+          'sysparm_action' => action,
           'sysparm_query' => "work_notesCONTAINSNXID: #{row['ip_address']}",
           'work_notes' => 
             "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -283,7 +288,7 @@ class ServiceNowHelper
       end
     end
     # NXID in the work_notes is the unique identifier used to query incidents to update them.
-    @ticket['work_notes'] += "\nNXID: #{current_ip}"
+    @ticket['work_notes'] += "\nNXID: #{current_ip}" unless (@ticket.size == 0)
     tickets.push(@ticket.to_json) unless @ticket.nil?
     tickets
   end
