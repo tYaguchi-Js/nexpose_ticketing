@@ -19,7 +19,7 @@ module NexposeTicketing
     #    |url| |summary| |fix|
     #
     def self.all_new_vulns
-      "SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id,
+	"SELECT DISTINCT on (da.ip_address, davs.solution_id) subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id,
        ds.url,proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix
         FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
           FROM fact_asset_scan_vulnerability_finding fasv
@@ -34,8 +34,8 @@ module NexposeTicketing
         JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
         JOIN dim_solution ds USING (solution_id)
         JOIN dim_asset da ON subs.asset_id = da.asset_id
-        ORDER BY da.ip_address"
-    end
+        ORDER BY da.ip_address, davs.solution_id"
+	end
     
     # Gets all new vulnerabilities happening after a reported scan id.
     #
