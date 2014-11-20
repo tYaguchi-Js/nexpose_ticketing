@@ -123,7 +123,11 @@ module NexposeTicketing
       report_config =  @report_helper.generate_sql_report_config()
       severity = options[:severity].nil? ? 0 : options[:severity]
       report_config.add_filter('version', '1.2.0')
-      report_config.add_filter('query', Queries.all_new_vulns)
+      if options[:ticket_mode] == 'V'
+        report_config.add_filter('query', Queries.all_new_vulns_by_vuln_id)
+      else
+          report_config.add_filter('query', Queries.all_new_vulns)
+      end
       unless sites.empty?
         Array(sites).each do |site_id|
           report_config.add_filter('site', site_id)
@@ -149,7 +153,11 @@ module NexposeTicketing
       fail 'Site cannot be null or empty' if site.nil? || reported_scan_id.nil?
       severity = site_options[:severity].nil? ? 0 : site_options[:severity]
       report_config.add_filter('version', '1.2.0')
-      report_config.add_filter('query', Queries.new_vulns_since_scan(reported_scan_id))
+      if site_options[:ticket_mode] == 'V'
+        report_config.add_filter('query', Queries.new_vulns_by_vuln_id_since_scan(reported_scan_id))
+      else
+        report_config.add_filter('query', Queries.new_vulns_since_scan(reported_scan_id))
+      end
       report_config.add_filter('site', site)
       report_config.add_filter('vuln-severity', severity)
       @report_helper.save_generate_cleanup_report_config(report_config)
@@ -194,7 +202,11 @@ module NexposeTicketing
       fail 'Site cannot be null or empty' if site.nil? || reported_scan_id.nil?
       severity = site_options[:severity].nil? ? 0 : site_options[:severity]
       report_config.add_filter('version', '1.2.0')
-      report_config.add_filter('query', Queries.all_vulns_since_scan(reported_scan_id))
+      if site_options[:ticket_mode] == 'V'
+        report_config.add_filter('query', Queries.all_vulns_by_vuln_id_since_scan(reported_scan_id))
+      else
+        report_config.add_filter('query', Queries.all_vulns_since_scan(reported_scan_id))
+      end
       report_config.add_filter('site', site)
       report_config.add_filter('vuln-severity', severity)
       @report_helper.save_generate_cleanup_report_config(report_config)

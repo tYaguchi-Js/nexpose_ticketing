@@ -37,7 +37,7 @@ class ServiceNowHelper
   #
   def update_tickets(tickets)
     if tickets.nil? || tickets.empty?
-      @log.log_message("No tickets to update.")
+      @log.log_message('No tickets to update.')
     else
       tickets.each do |ticket|
         send_ticket(ticket, @servicenow_data[:servicenow_url], @servicenow_data[:redirect_limit])
@@ -53,7 +53,7 @@ class ServiceNowHelper
   #
   def close_tickets(tickets)
     if tickets.nil? || tickets.empty?
-      @log.log_message("No tickets to close.")
+      @log.log_message('No tickets to close.')
     else
       tickets.each do |ticket|
         send_ticket(ticket, @servicenow_data[:servicenow_url], @servicenow_data[:redirect_limit])
@@ -107,15 +107,15 @@ class ServiceNowHelper
   # * *Returns* :
   #   - List of JSON-formated tickets for creating within ServiceNow.
   #
-  def prepare_create_tickets(vulnerability_list)
+  def prepare_create_tickets(vulnerability_list, site_id)
     @ticket = Hash.new(-1)
     case @options[:ticket_mode]
     # 'D' Default mode: IP *-* Vulnerability
     when 'D'
-      prepare_create_tickets_default(vulnerability_list)
+      prepare_create_tickets_default(vulnerability_list, site_id)
     # 'I' IP address mode: IP address -* Vulnerability
     when 'I'
-      prepare_create_tickets_by_ip(vulnerability_list)
+      prepare_create_tickets_by_ip(vulnerability_list, site_id)
     else
       fail 'No ticketing mode selected.'
     end
@@ -132,14 +132,14 @@ class ServiceNowHelper
   # * *Returns* :
   #   - List of JSON-formated tickets for creating within ServiceNow.
   #
-  def prepare_create_tickets_default(vulnerability_list)
-    @log.log_message("Preparing tickets by default method.")
+  def prepare_create_tickets_default(vulnerability_list, site_id)
+    @log.log_message('Preparing tickets by default method.')
     tickets = []
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
       # ServiceNow doesn't allow new line characters in the incident short description.
       summary = row['summary'].gsub(/\n/, ' ')
 
-      @log.log_message("Creating ticket with IP address: #{row['ip_address']} and summary: #{summary}")
+      @log.log_message("Creating ticket with IP address: #{row['ip_address']}, site id: #{site_id} and summary: #{summary}")
       # NXID in the work_notes is a unique identifier used to query incidents to update/resolve 
       # incidents as they are resolved in Nexpose.
       ticket = {
@@ -153,7 +153,7 @@ class ServiceNowHelper
                           Fix: #{row['fix']} 
                           ----------------------------------------------------------------------------
                           URL: #{row['url']}
-                          NXID: #{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
+                          NXID: #{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
       }.to_json
       tickets.push(ticket)
     end
@@ -171,14 +171,14 @@ class ServiceNowHelper
   # * *Returns* :
   #   - List of JSON-formated tickets for creating within ServiceNow.
   #
-  def prepare_create_tickets_by_ip(vulnerability_list)
-    @log.log_message("Preparing tickets by IP address.")
+  def prepare_create_tickets_by_ip(vulnerability_list, site_id)
+    @log.log_message('Preparing tickets by IP address.')
     tickets = []
     current_ip = -1
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
       if current_ip == -1
         current_ip = row['ip_address']
-        @log.log_message("Creating ticket with IP address: #{row['ip_address']}")
+        @log.log_message("Creating ticket with IP address: #{row['ip_address']} for site with ID: #{site_id}")
         @ticket = {
           'sysparm_action' => 'insert',
           'caller_id' => "#{@servicenow_data[:username]}",
@@ -206,7 +206,7 @@ class ServiceNowHelper
       unless current_ip == row['ip_address']
         # NXID in the work_notes is the unique identifier used to query incidents to update them.
         @log.log_message("Found new IP address. Finishing ticket with with IP address: #{current_ip} and moving onto IP #{row['ip_address']}")
-        @ticket['work_notes'] += "\nNXID: #{current_ip}"
+        @ticket['work_notes'] += "\nNXID: #{site_id}#{current_ip}"
         @ticket = @ticket.to_json
         tickets.push(@ticket)
         current_ip = -1
@@ -214,7 +214,7 @@ class ServiceNowHelper
       end
     end
     # NXID in the work_notes is the unique identifier used to query incidents to update them.
-    @ticket['work_notes'] += "\nNXID: #{current_ip}" unless (@ticket.size == 0)
+    @ticket['work_notes'] += "\nNXID: #{site_id}#{current_ip}" unless (@ticket.size == 0)
     tickets.push(@ticket.to_json) unless @ticket.nil?
     tickets
   end
@@ -229,11 +229,11 @@ class ServiceNowHelper
   # * *Returns* :
   #   - List of JSON-formated tickets for updating within ServiceNow.
   #
-  def prepare_update_tickets(vulnerability_list)
+  def prepare_update_tickets(vulnerability_list, site_id)
     fail 'Ticket updates are only supported in IP-address mode.' if @options[:ticket_mode] == 'D'
     @ticket = Hash.new(-1)
     
-    @log.log_message("Preparing ticket updates by IP address.")
+    @log.log_message('Preparing ticket updates by IP address.')
     tickets = []
     current_ip = -1
     ticket_status = 'New'
@@ -241,7 +241,7 @@ class ServiceNowHelper
       if current_ip == -1 
         current_ip = row['ip_address']
         ticket_status = row['comparison']
-        @log.log_message("Creating ticket update with IP address: #{row['ip_address']}")
+        @log.log_message("Creating ticket update with IP address: #{row['ip_address']} and site ID: #{site_id}")
         @log.log_message("Ticket status #{ticket_status}")
         action =  'update'
         if ticket_status == 'New'
@@ -249,7 +249,7 @@ class ServiceNowHelper
         end
         @ticket = {
           'sysparm_action' => action,
-          'sysparm_query' => "work_notesCONTAINSNXID: #{row['ip_address']}",
+          'sysparm_query' => "work_notesCONTAINSNXID: #{site_id}#{row['ip_address']}",
           'work_notes' => 
             "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++
              ++ #{row['comparison']} Vulnerabilities +++++++++++++++++++++++++++++++++++++
@@ -280,7 +280,7 @@ class ServiceNowHelper
       end
       unless current_ip == row['ip_address']
         # NXID in the work_notes is the unique identifier used to query incidents to update them.
-        @ticket['work_notes'] += "\nNXID: #{current_ip}"
+        @ticket['work_notes'] += "\nNXID: #{site_id}#{current_ip}"
         @ticket = @ticket.to_json
         tickets.push(@ticket)
         current_ip = -1
@@ -288,7 +288,7 @@ class ServiceNowHelper
       end
     end
     # NXID in the work_notes is the unique identifier used to query incidents to update them.
-    @ticket['work_notes'] += "\nNXID: #{current_ip}" unless (@ticket.size == 0)
+    @ticket['work_notes'] += "\nNXID: #{site_id}#{current_ip}" unless (@ticket.size == 0)
     tickets.push(@ticket.to_json) unless @ticket.nil?
     tickets
   end
@@ -302,15 +302,15 @@ class ServiceNowHelper
   # * *Returns* :
   #   - List of JSON-formated tickets for closing within ServiceNow.
   #
-  def prepare_close_tickets(vulnerability_list)
+  def prepare_close_tickets(vulnerability_list, site_id)
     fail 'Ticket closures are only supported in default mode.' if @options[:ticket_mode] == 'I'
-    @log.log_message("Preparing ticket closures by default method.")
+    @log.log_message('Preparing ticket closures by default method.')
     tickets = []
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
       # 'state' 7 is the "Closed" state within ServiceNow.
       ticket = {
           'sysparm_action' => 'update',
-          'sysparm_query' => "work_notesCONTAINSNXID: #{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}",
+          'sysparm_query' => "work_notesCONTAINSNXID: #{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}",
           'state' => '7'
       }.to_json
       tickets.push(ticket)

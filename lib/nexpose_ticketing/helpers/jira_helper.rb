@@ -33,22 +33,22 @@ class JiraHelper
   end
 
   # Prepares tickets from the CSV.
-  def prepare_create_tickets(vulnerability_list)
+  def prepare_create_tickets(vulnerability_list, site_id)
     @ticket = Hash.new(-1)
     case @options[:ticket_mode]
     # 'D' Default IP *-* Vulnerability
     when 'D'
-      prepare_tickets_default(vulnerability_list)
+      prepare_tickets_default(vulnerability_list, site_id)
     # 'I' IP address -* Vulnerability
     when 'I'
-      prepare_tickets_by_ip(vulnerability_list)
+      prepare_tickets_by_ip(vulnerability_list, site_id)
     else
         fail 'No ticketing mode selected.'
     end
   end
 
   # Prepares and creates tickets in default mode.
-  def prepare_tickets_default(vulnerability_list)
+  def prepare_tickets_default(vulnerability_list, site_id)
     tickets = []
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
       # JiraHelper doesn't like new line characters in their summaries.
@@ -69,7 +69,7 @@ class JiraHelper
   end
 
   # Prepares and creates tickets in IP mode.
-  def prepare_tickets_by_ip(vulnerability_list)
+  def prepare_tickets_by_ip(vulnerability_list, site_id)
     tickets = []
     current_ip = -1
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|

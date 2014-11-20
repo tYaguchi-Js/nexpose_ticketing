@@ -79,6 +79,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         log_message("Loading helper: #{file}")
         require_relative file
       end
+      log_message("Ticket mode: #{@options[:ticket_mode]}.")
+
       log_message("Enabling helper: #{@helper_data[:helper_name]}.")
       @helper = eval(@helper_data[:helper_name]).new(@helper_data, @options)
 
@@ -133,7 +135,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         log_message("Running full vulnerability report on site #{site}")
         all_vulns_file = ticket_repository.all_vulns(options, site)
         log_message('Preparing tickets.')
-        ticket_rate_limiter(options, all_vulns_file, Proc.new { |ticket_batch| helper.prepare_create_tickets(ticket_batch) }, Proc.new { |tickets| helper.create_tickets(tickets) })
+        ticket_rate_limiter(options, all_vulns_file, Proc.new { |ticket_batch| helper.prepare_create_tickets(ticket_batch, site) }, Proc.new { |tickets| helper.create_tickets(tickets) })
       }
       log_message('Finished process all vulnerabilities.')
     end
@@ -162,37 +164,38 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     # There's a new site we haven't seen before.
     def full_new_site_report(site_id, ticket_repository, options, helper)
       log_message("New site id: #{site_id} detected. Generating report.")
-      new_site_vuln_file = ticket_repository.all_vulns(sites: [site_id], severity: options[:severity])
+      new_site_vuln_file = ticket_repository.all_vulns(sites: [site_id], severity: options[:severity], ticket_mode: options[:ticket_mode])
       log_message('Report generated, preparing tickets.')
-      ticket_rate_limiter(options, new_site_vuln_file, Proc.new {|ticket_batch| helper.prepare_create_tickets(ticket_batch)}, Proc.new {|tickets| helper.create_tickets(tickets)})
+      ticket_rate_limiter(options, new_site_vuln_file, Proc.new {|ticket_batch| helper.prepare_create_tickets(ticket_batch, site_id)}, Proc.new {|tickets| helper.create_tickets(tickets)})
     end
 
     # There's a new scan with possibly new vulnerabilities.
     def delta_site_new_scan(ticket_repository, site_id, options, helper, file_site_histories)
       log_message("New scan detected for site: #{site_id}. Generating report.")
       
-      if options[:ticket_mode] == 'I'
-        # I-mode tickets require updating the tickets in the target system.
+      if options[:ticket_mode] == 'I' || options[:ticket_mode] == 'V'
+        # I-mode and V-mode tickets require updating the tickets in the target system.
         log_message("Scan id for new scan: #{file_site_histories[site_id]}.")
         all_scan_vuln_file = ticket_repository.all_vulns_sites(scan_id: file_site_histories[site_id],
                                                           site_id: site_id,
-                                                          severity: options[:severity])
-        if helper.respond_to?("prepare_update_tickets") && helper.respond_to?("update_tickets")
-          ticket_rate_limiter(options, all_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_update_tickets(ticket_batch)}, Proc.new {|tickets| helper.update_tickets(tickets)})
-        else
-          log_message("Helper does not implement update methods")
-          fail "Helper using 'I' mode must implement prepare_updates and update_tickets"
-        end
+                                                          severity: options[:severity],
+                                                          ticket_mode: options[:ticket_mode])
+          if helper.respond_to?("prepare_update_tickets") && helper.respond_to?("update_tickets")
+            ticket_rate_limiter(options, all_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_update_tickets(ticket_batch, site_id)}, Proc.new {|tickets| helper.update_tickets(tickets)})
+          else
+            log_message("Helper does not implement update methods")
+            fail "Helper using 'I' or 'V' mode must implement prepare_updates and update_tickets"
+          end
       else
         # D-mode tickets require creating new tickets and closing old tickets.
         new_scan_vuln_file = ticket_repository.new_vulns_sites(scan_id: file_site_histories[site_id], site_id: site_id,
-                                                          severity: options[:severity])
+                                                          severity: options[:severity], ticket_mode: options[:ticket_mode])
         preparse = CSV.new(new_scan_vuln_file.path, headers: :first_row)
         empty_report = preparse.shift.nil?
         log_message("No new vulnerabilities found in new scan for site: #{site_id}.") if empty_report
         log_message("New vulnerabilities found in new scan for site #{site_id}, preparing tickets.") unless empty_report
         unless empty_report
-          ticket_rate_limiter(options, new_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_create_tickets(ticket_batch)}, Proc.new {|tickets| helper.create_tickets(tickets)})
+          ticket_rate_limiter(options, new_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_create_tickets(ticket_batch, site_id)}, Proc.new {|tickets| helper.create_tickets(tickets)})
         end
         
         if helper.respond_to?("prepare_close_tickets") && helper.respond_to?("close_tickets")
@@ -203,12 +206,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           log_message("No old (closed) vulnerabilities found in new scan for site: #{site_id}.") if empty_report
           log_message("Old vulnerabilities found in new scan for site #{site_id}, preparing closures.") unless empty_report
           unless empty_report
-            ticket_rate_limiter(options, old_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_close_tickets(ticket_batch)}, Proc.new {|tickets| helper.close_tickets(tickets)})
+            ticket_rate_limiter(options, old_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_close_tickets(ticket_batch, site_id)}, Proc.new {|tickets| helper.close_tickets(tickets)})
           end
         else
-          # Create a log message but do not halt execution of the helper if ticket closeing is not 
+          # Create a log message but do not halt execution of the helper if ticket closing is not
           # supported to allow legacy code to execute normally.
-          log_message('Helper does not impelment close methods.')
+          log_message('Helper does not implement close methods.')
         end
       end
     end
@@ -217,11 +220,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       batch_size_max = (options[:batch_size] + 1)
       log_message("Batching tickets in sizes: #{options[:batch_size]}")
 
+      #Vulnerability mode is batched by vulnerability_id. The rest are batched by ip_address.
+      if @options[:ticket_mode] == 'V'
+        batching_field = 'vulnerability_id'
+      else
+        batching_field = 'ip_address'
+      end
+
       # Start the batching
       query_results_file.rewind
       csv_header = query_results_file.readline
       ticket_batch = []
-      current_ip = -1
+      current_batching_value = -1
       current_csv_row = nil
 
       begin
@@ -229,15 +239,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           ticket_batch << line
 
           CSV.parse(line.chomp, headers: csv_header)  do |row|
-            if current_ip == -1
-              current_ip = row['ip_address']  unless row['ip_address'] == 'ip_address'
+            if current_batching_value == -1
+              current_batching_value = row[batching_field.to_s]  unless row[batching_field.to_s] == 'current_batching_value'
             end
-            current_csv_row = row unless row['ip_address'] == 'ip_address'
+            current_csv_row = row unless row[batching_field.to_s] == 'current_batching_value'
           end
 
           if ticket_batch.size >= batch_size_max
             #Batch target reached. Make sure we  end with a complete IP address set (all tickets for a single IP in this batch)
-            if(current_ip != current_csv_row['ip_address'])
+            if(current_batching_value != current_csv_row[batching_field.to_s])
               log_message('Batch size reached. Sending tickets.')
 
               #Move the mismatching line to the next batch
@@ -247,7 +257,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               ticket_batch.clear
               ticket_batch << csv_header
               ticket_batch << line_holder
-              current_ip = -1
+              current_batching_value = -1
             end
           end
         end
