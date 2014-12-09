@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+require 'yaml'
+require 'nexpose_ticketing'
+
+# Path to ServiceNow configuration file
+SERVICEDESK_CONFIG_PATH = File.join(File.dirname(__FILE__),
+                                   '../lib/nexpose_ticketing/config/servicedesk.config')
+
+# Read in ServiceDesk options from servicenow.config
+servicedesk_options = begin
+  YAML.load_file(SERVICEDESK_CONFIG_PATH)
+rescue ArgumentError => e
+  raise "Could not parse YAML #{SERVICEDESK_CONFIG_PATH} : #{e.message}"
+end
+
+# Initialize Nexpose Ticket Service using ServiceDesk
+NexposeTicketing.start(servicedesk_options)
