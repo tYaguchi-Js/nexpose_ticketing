@@ -462,8 +462,8 @@ class RemedyHelper
       end
     end
     # NXID in the work_notes is the unique identifier used to query incidents to update them.
-    @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_ip}"
-    tickets.push(@ticket) unless @ticket.nil?
+    @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_ip}" unless @ticket.empty?
+    tickets.push(@ticket) unless @ticket.nil? || @ticket.empty?
     tickets
   end
 
@@ -558,8 +558,8 @@ class RemedyHelper
     end
     # NXID in the work_notes is the unique identifier used to query incidents to update them.
     @ticket['Notes'] += current_solutions_text
-    @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_asset_id}#{current_vuln_id}"
-    tickets.push(@ticket) unless @ticket.nil?
+    @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_asset_id}#{current_vuln_id}" unless @ticket.empty?
+    tickets.push(@ticket) unless @ticket.nil? || @ticket.empty?
     tickets
   end
 
@@ -684,8 +684,7 @@ class RemedyHelper
   end
 
 
-  # Prepare ticket closures from the CSV of vulnerabilities exported from Nexpose. This method
-  # currently only supports updating default mode tickets in ServiceNow.
+  # Prepare ticket closures from the CSV of vulnerabilities exported from Nexpose.
   #
   # * *Args*    :
   #   - +vulnerability_list+ -  CSV of vulnerabilities within Nexpose.
@@ -696,12 +695,26 @@ class RemedyHelper
   def prepare_close_tickets(vulnerability_list, site_id)
     fail 'Ticket closures are only supported in default mode.' if @options[:ticket_mode] == 'I'
     @log.log_message('Preparing ticket closures by default method.')
+    @nxid = nil
     tickets = []
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
+      case @options[:ticket_mode]
+        # 'D' Default mode: IP *-* Vulnerability
+        when 'D'
+          @nxid = "#{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
+        # 'I' IP address mode: IP address -* Vulnerability
+        when 'I'
+          @nxid = "#{site_id}#{row['current_ip']}"
+        # 'V' Vulnerability mode: Vulnerability -* IP address
+        when 'V'
+          @nxid = "#{site_id}#{row['current_asset_id']}#{row['current_vuln_id']}"
+        else
+          fail 'Could not close tickets - do not understand the ticketing mode!'
+      end
       # Query Remedy for the incident by unique id (generated NXID)
-      queried_incident = query_for_ticket("NXID: #{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}")
+      queried_incident = query_for_ticket("NXID: #{@nxid}")
       if queried_incident.nil? || queried_incident.empty?
-        @log.log_message("No incident found for NXID: #{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}")
+        @log.log_message("No incident found for NXID: #{@nxid}")
       else
         # Remedy incident updates require populating all fields.
         ticket = {

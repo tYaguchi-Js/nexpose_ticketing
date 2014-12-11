@@ -94,7 +94,7 @@ class ServiceNowHelper
       when Net::HTTPRedirection then send_ticket(ticket, res['location'], limit - 1)
     else
       @log.log_message("Error in response: #{res['error']}")
-      res['error']
+      raise ArgumentError, res['error']
     end
   end
 
@@ -120,7 +120,8 @@ class ServiceNowHelper
       fail 'No ticketing mode selected.'
     end
   end
-  
+
+
   # Prepares a list of vulnerabilities into a list of JSON-formatted tickets (incidents) for 
   # ServiceNow. The preparation by default means that each vulnerability within Nexpose is a 
   # separate incident within ServiceNow.  This makes for smaller, more actionalble incidents but 
@@ -260,7 +261,7 @@ class ServiceNowHelper
         # If the ticket_status is different, add a a new 'header' to signify a new block of tickets.
         unless ticket_status == row['comparison']
           @ticket['work_notes'] += 
-            "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            "\n\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++
              ++ #{row['comparison']} Vulnerabilities +++++++++++++++++++++++++++++++++++++
              +++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n"
           ticket_status = row['comparison']
@@ -292,8 +293,9 @@ class ServiceNowHelper
     tickets.push(@ticket.to_json) unless @ticket.nil?
     tickets
   end
-  
-  # Prepare ticket closures from the CSV of vulnerabilities exported from Nexpose. This method 
+
+
+  # Prepare ticket closures from the CSV of vulnerabilities exported from Nexpose. This method
   # currently only supports updating default mode tickets in ServiceNow.
   #
   # * *Args*    :
@@ -303,14 +305,28 @@ class ServiceNowHelper
   #   - List of JSON-formated tickets for closing within ServiceNow.
   #
   def prepare_close_tickets(vulnerability_list, site_id)
-    fail 'Ticket closures are only supported in default mode.' if @options[:ticket_mode] == 'I'
-    @log.log_message('Preparing ticket closures by default method.')
+    @log.log_message("Preparing ticket closures for mode #{@options[:ticket_mode]}.")
     tickets = []
+    @nxid = nil
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
+      case @options[:ticket_mode]
+        # 'D' Default mode: IP *-* Vulnerability
+        when 'D'
+          @nxid = "#{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
+        # 'I' IP address mode: IP address -* Vulnerability
+        when 'I'
+          @nxid = "#{site_id}#{row['ip_address']}"
+        # 'V' Vulnerability mode: Vulnerability -* IP address
+##        when 'V'
+##          @nxid = "#{site_id}#{row['asset_id']}#{row['vulnerability_id']}"
+        else
+          fail 'Could not close tickets - do not understand the ticketing mode!'
+      end
       # 'state' 7 is the "Closed" state within ServiceNow.
+      @log.log_message("Closing ticket with NXID: #{@nxid}.")
       ticket = {
           'sysparm_action' => 'update',
-          'sysparm_query' => "work_notesCONTAINSNXID: #{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}",
+          'sysparm_query' => "work_notesCONTAINSNXID: #{@nxid}",
           'state' => '7'
       }.to_json
       tickets.push(ticket)

@@ -119,15 +119,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     # Generates a full site(s) report ticket(s).
     def all_site_report(ticket_repository, options, helper)
-
-      sites_to_query = Array.new
-      if options[:sites].empty?
-        log_message('No site(s) specified, generating full vulnerability report.')
-        @ticket_repository.all_site_details.each { |site| sites_to_query << site.id }
-      else
-        log_message('Generating full vulnerability report on user entered sites.')
-        sites_to_query =  Array(options[:sites])
-      end
+      log_message('Generating full vulnerability report on user entered sites.')
+      sites_to_query =  Array(options[:sites])
 
       log_message("Generating full vulnerability report on the following sites: #{sites_to_query.join(', ')}")
 
@@ -164,7 +157,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     # There's a new site we haven't seen before.
     def full_new_site_report(site_id, ticket_repository, options, helper)
       log_message("New site id: #{site_id} detected. Generating report.")
-      new_site_vuln_file = ticket_repository.all_vulns(sites: [site_id], severity: options[:severity], ticket_mode: options[:ticket_mode])
+      new_site_vuln_file = ticket_repository.all_vulns(options, site_id)
       log_message('Report generated, preparing tickets.')
       ticket_rate_limiter(options, new_site_vuln_file, Proc.new {|ticket_batch| helper.prepare_create_tickets(ticket_batch, site_id)}, Proc.new {|tickets| helper.create_tickets(tickets)})
     end
@@ -177,19 +170,46 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         # I-mode and V-mode tickets require updating the tickets in the target system.
         log_message("Scan id for new scan: #{file_site_histories[site_id]}.")
         all_scan_vuln_file = ticket_repository.all_vulns_sites(scan_id: file_site_histories[site_id],
-                                                          site_id: site_id,
-                                                          severity: options[:severity],
-                                                          ticket_mode: options[:ticket_mode])
-          if helper.respond_to?("prepare_update_tickets") && helper.respond_to?("update_tickets")
-            ticket_rate_limiter(options, all_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_update_tickets(ticket_batch, site_id)}, Proc.new {|tickets| helper.update_tickets(tickets)})
+                                                               site_id: site_id,
+                                                               severity: options[:severity],
+                                                               ticket_mode: options[:ticket_mode],
+                                                               riskScore: options[:riskScore],
+                                                               vulnerabilityCategories: options[:vulnerabilityCategories],
+                                                               tags: options[:tags])
+
+        if helper.respond_to?('prepare_update_tickets') && helper.respond_to?('update_tickets')
+          ticket_rate_limiter(options, all_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_update_tickets(ticket_batch, site_id)}, Proc.new {|tickets| helper.update_tickets(tickets)})
+        else
+          log_message('Helper does not implement update methods')
+          fail "Helper using 'I' or 'V' mode must implement prepare_updates and update_tickets"
+        end
+
+        if options[:close_old_tickets_on_update] == 'Y'
+          tickets_to_close_file = ticket_repository.tickets_to_close(scan_id: file_site_histories[site_id],
+                                                                     site_id: site_id,
+                                                                     severity: options[:severity],
+                                                                     ticket_mode: options[:ticket_mode],
+                                                                     riskScore: options[:riskScore],
+                                                                     vulnerabilityCategories: options[:vulnerabilityCategories],
+                                                                     tags: options[:tags])
+
+          if helper.respond_to?('prepare_close_tickets') && helper.respond_to?('close_tickets')
+            ticket_rate_limiter(options, tickets_to_close_file, Proc.new {|ticket_batch| helper.prepare_close_tickets(ticket_batch, site_id)}, Proc.new {|tickets| helper.close_tickets(tickets)})
           else
-            log_message("Helper does not implement update methods")
-            fail "Helper using 'I' or 'V' mode must implement prepare_updates and update_tickets"
+            log_message('Helper does not implement close methods')
+            fail 'Helper using \'I\' or \'V\' mode must implement prepare_close_tickets and close_tickets'
           end
+        end
       else
         # D-mode tickets require creating new tickets and closing old tickets.
-        new_scan_vuln_file = ticket_repository.new_vulns_sites(scan_id: file_site_histories[site_id], site_id: site_id,
-                                                          severity: options[:severity], ticket_mode: options[:ticket_mode])
+        new_scan_vuln_file = ticket_repository.new_vulns_sites(scan_id: file_site_histories[site_id],
+                                                               site_id: site_id,
+                                                               severity: options[:severity],
+                                                               ticket_mode: options[:ticket_mode],
+                                                               riskScore: options[:riskScore],
+                                                               vulnerabilityCategories: options[:vulnerabilityCategories],
+                                                               tags: options[:tags])
+
         preparse = CSV.new(new_scan_vuln_file.path, headers: :first_row)
         empty_report = preparse.shift.nil?
         log_message("No new vulnerabilities found in new scan for site: #{site_id}.") if empty_report
@@ -198,9 +218,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           ticket_rate_limiter(options, new_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_create_tickets(ticket_batch, site_id)}, Proc.new {|tickets| helper.create_tickets(tickets)})
         end
         
-        if helper.respond_to?("prepare_close_tickets") && helper.respond_to?("close_tickets")
-          old_scan_vuln_file = ticket_repository.old_vulns_sites(scan_id: file_site_histories[site_id], site_id: site_id,
-                                                            severity: options[:severity])
+        if helper.respond_to?('prepare_close_tickets') && helper.respond_to?('close_tickets')
+          old_scan_vuln_file = ticket_repository.old_vulns_sites(scan_id: file_site_histories[site_id],
+                                                                 site_id: site_id,
+                                                                 severity: options[:severity],
+                                                                 riskScore: options[:riskScore],
+                                                                 vulnerabilityCategories: options[:vulnerabilityCategories],
+                                                                 tags: options[:tags])
+
           preparse = CSV.new(old_scan_vuln_file.path, headers: :first_row, :skip_blanks => true)
           empty_report = preparse.shift.nil?
           log_message("No old (closed) vulnerabilities found in new scan for site: #{site_id}.") if empty_report
@@ -215,6 +240,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         end
       end
     end
+
 
     def ticket_rate_limiter(options, query_results_file, ticket_prepare_method, ticket_send_method)
       batch_size_max = (options[:batch_size] + 1)
@@ -293,9 +319,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       file_site_histories = prepare_historical_data(@ticket_repository, @options)
       historical_scan_file = File.join(File.dirname(__FILE__), "#{@options[:file_name]}")
       # If we didn't specify a site || first time run (no scan history), then it gets all the vulnerabilities.
-      if @options[:sites].empty? || file_site_histories.nil?
+      if @options[:sites].nil? || @options[:sites].empty? || file_site_histories.nil?
         log_message('Storing current scan state before obtaining all vulnerabilities.')
-        current_scan_state = ticket_repository.load_last_scans(options)
+
+        if options[:sites].nil? || options[:sites].empty?
+          log_message('No site(s) specified, generating for all sites.')
+          @ticket_repository.all_site_details.each { |site|  (@options[:sites] ||= []) << site.id.to_s }
+          log_message("List of sites is now <#{@options[:sites]}>")
+        end
+
+        current_scan_state = ticket_repository.load_last_scans(@options)
 
         all_site_report(@ticket_repository, @options, @helper)
 
