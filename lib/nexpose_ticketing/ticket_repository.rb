@@ -5,11 +5,14 @@ module NexposeTicketing
     require 'nexpose'
     require 'nexpose_ticketing/queries'
     require 'nexpose_ticketing/report_helper'
+    require 'nexpose_ticketing/nx_logger'
 
     @timeout = 10800
 
     def initialize(options = nil)
       @timeout = options[:timeout]
+      @log = NexposeTicketing::NXLogger.new
+
     end
 
     def nexpose_login(nexpose_data)
@@ -339,6 +342,9 @@ module NexposeTicketing
             @defined_tags = @nsc.list_tags.select {|nexposeTag| tag_strings.include?(nexposeTag.name)}
         end
       end
+
+      @log.log_message("created tag filter #{@defined_tags}")
+
       @defined_tags
     end
 
