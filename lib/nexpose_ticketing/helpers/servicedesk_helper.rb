@@ -188,10 +188,10 @@ class ServiceDeskHelper
             if status.empty?
                 status_code = -1
             else
-                status_code = Integer( status_code)
+                status_code = Integer( status )
             end
         
-            if status != 200
+            if status_code != 200
                 @log.log_message("Unable to create ticket #{ticket}, got response #{response.to_xml}")
                 return
             end
