@@ -1,5 +1,6 @@
 require 'net/http'
 require 'nokogiri'
+require 'dbm'
 
 class ServiceDeskHelper
     attr_accessor :servicedesk_data, :options, :log
@@ -108,8 +109,6 @@ class ServiceDeskHelper
                 }
             }
         end
-        puts request.to_xml
-
         return request.to_xml
     end
 
