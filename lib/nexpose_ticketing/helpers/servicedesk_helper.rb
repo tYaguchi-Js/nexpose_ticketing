@@ -1,5 +1,6 @@
 require 'net/http'
 require 'nokogiri'
+require 'dbm'
 
 class ServiceDeskHelper
     attr_accessor :servicedesk_data, :options, :log
@@ -108,8 +109,6 @@ class ServiceDeskHelper
                 }
             }
         end
-        puts request.to_xml
-
         return request.to_xml
     end
 
@@ -163,7 +162,7 @@ class ServiceDeskHelper
         tickets = []
         hostVulns = {}
         CSV.parse( vulnerability_list.chomp, headers: :first_row )  do |vuln|
-            hostVulns["#{site_id}#{vuln['ip_address']}"] = { :ip => vuln['ip_address'], :description => "" } if not hostVulns.has_key?(vuln['asset_id'])
+            hostVulns["#{site_id}#{vuln['ip_address']}"] = { :ip => vuln['ip_address'], :description => "" } if not hostVulns.has_key?("#{site_id}#{vuln['ip_address']}")
             hostVulns["#{site_id}#{vuln['ip_address']}"][:description] += "Summary: #{vuln['summary']}\nFix: #{vuln['fix']}\nURL: #{vuln['url']}\n\n"
         end
 
@@ -184,14 +183,24 @@ class ServiceDeskHelper
                             'INPUT_DATA' => ticket[:description] )
 
         response = Nokogiri::XML.parse( res.read_body )
-        status = Integer(response.xpath('//statuscode').text)
+        begin
+            status = response.xpath('//statuscode').text
+            if status.empty?
+                status_code = -1
+            else
+                status_code = Integer( status )
+            end
         
-        if status != 200
-            @log.log_message("Unable to create ticket #{ticket}, got response #{response.to_xml}")
-            return
-        end
+            if status_code != 200
+                @log.log_message("Unable to create ticket #{ticket}, got response #{response.to_xml}")
+                return
+            end
 
-        workorderid = Integer(response.xpath('//workorderid').text)
+            workorderid = Integer(response.xpath('//workorderid').text)
+        rescue ArgumentError => ae
+            @log.log_message("Failed to parse response from servicedesk #{response}")
+            raise ae
+        end
 
         @log.log_message( "created ticket #{workorderid}")
         add_ticket_to_database( workorderid, ticket[:nxid] )
