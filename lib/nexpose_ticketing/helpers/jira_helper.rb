@@ -8,6 +8,8 @@ require 'csv'
 # found in Nexpose.
 # Copyright:: Copyright (c) 2014 Rapid7, LLC.
 class JiraHelper
+  # TODO: Add V Mode.
+  # TODO: Allow updates/closed loop.
   attr_accessor :jira_data, :options
   def initialize(jira_data, options)
     @jira_data = jira_data
@@ -33,6 +35,7 @@ class JiraHelper
   end
 
   # Prepares tickets from the CSV.
+  # TODO Implement V Version.
   def prepare_create_tickets(vulnerability_list, site_id)
     @ticket = Hash.new(-1)
     case @options[:ticket_mode]
