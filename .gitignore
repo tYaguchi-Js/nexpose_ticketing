@@ -15,6 +15,7 @@ tmp
 lib/log/*
 lib/*.csv
 lib/config/*
+Gemfile.lock
 
 # YARD artifacts
 .yardoc

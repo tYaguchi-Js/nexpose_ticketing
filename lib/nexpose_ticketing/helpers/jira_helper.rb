@@ -25,7 +25,7 @@ class JiraHelper
       req.body = ticket
       resp = Net::HTTP.new(url.host, url.port)
       # Enable this line for debugging the https call.
-      # resp.set_debug_output $stderr
+      #resp.set_debug_output $stderr
       resp.use_ssl = true if @jira_data[:jira_url].to_s.start_with?('https')
       resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
       resp.start { |http| http.request(req) }
@@ -58,7 +58,7 @@ class JiraHelper
               'project' => {
                   'key' => "#{@jira_data[:project]}" },
               'summary' => "#{row['ip_address']} => #{summary}",
-              'description' => "#{row['fix']} \n\n #{row['url']}",
+              'description' => "CVSS Score: #{row['cvss_score']} \n\n #{row['fix']} \n\n #{row['url']}",
               'issuetype' => {
                   'name' => 'Task' }
           }
@@ -86,10 +86,20 @@ class JiraHelper
             }
         }
       end
+      # TODO: Better formating this.
       if current_ip == row['ip_address']
-        @ticket['fields']['description'] += "\n ==============================\n
-          #{row['summary']} \n ==============================\n
-          \n #{row['fix']}\n\n #{row['url']}"
+        @ticket['fields']['description'] +=
+        "\n ==============================\n\n
+        #{row['summary']} \n CVSS Score: #{row['cvss_score']}
+        \n\n ==============================\n
+        \n Source: #{row['source']}, Reference: #{row['reference']}
+        \n
+        \n First seen: #{row['first_discovered']}
+        \n Last seen: #{row['most_recently_discovered']}
+        \n Fix:
+        \n #{row['fix']}\n\n #{row['url']}
+        \n
+        \n\n"
       end
       unless current_ip == row['ip_address']
         @ticket = @ticket.to_json

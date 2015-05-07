@@ -40,7 +40,8 @@ module NexposeTicketing
     #
     def self.all_new_vulns(options = {})
 	"SELECT DISTINCT on (da.ip_address, davs.solution_id) subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id,
-       ds.url,proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, fa.riskscore
+       ds.url,proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, fa.riskscore, dv.cvss_score, dvr.source, dvr.reference,
+        fasva.first_discovered, fasva.most_recently_discovered
         FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN
@@ -51,7 +52,10 @@ module NexposeTicketing
               GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan, fasv.scan_id
               HAVING NOT baselineComparison(fasv.scan_id, current_scan) = 'Old'
           ) subs
+        JOIN dim_vulnerability dv USING (vulnerability_id)
+        JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
         JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
+        JOIN fact_asset_vulnerability_age fasva ON subs.vulnerability_id = fasva.vulnerability_id AND subs.asset_id = fasva.asset_id
         JOIN dim_solution ds USING (solution_id)
         JOIN dim_asset da ON subs.asset_id = da.asset_id
         JOIN fact_asset fa ON fa.asset_id = da.asset_id
