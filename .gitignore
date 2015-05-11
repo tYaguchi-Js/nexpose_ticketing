@@ -14,7 +14,7 @@ tmp
 .idea
 lib/log/*
 lib/nexpose_ticketing/log/*
-lib/*.csv
+lib/nexpose_ticketing/*.csv
 lib/config/*
 Gemfile.lock
 
