@@ -146,7 +146,7 @@ class ServiceNowHelper
 
       ticket = {
           'sysparm_action' => 'insert',
-          'u_u_caller_id' => "#{@servicenow_data[:username]}",
+          'u_caller_id' => "#{@servicenow_data[:username]}",
           'u_category' => 'Software',
           'u_impact' => '1',
           'u_urgency' => '1',
