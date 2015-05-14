@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version = '>= 1.9'
   s.platform              = 'ruby'
   s.executables           = ['nexpose_jira','nexpose_servicenow','nexpose_remedy', 'nexpose_servicedesk']
-  s.add_runtime_dependency('nexpose', '~> 0.6.0')
+  s.add_runtime_dependency('nexpose', '~> 0.8.0')
   s.add_runtime_dependency('savon', '~> 2.1')
   s.add_runtime_dependency('nokogiri', '~> 1.6')
 end
