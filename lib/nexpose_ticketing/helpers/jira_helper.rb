@@ -3,6 +3,7 @@ require 'net/http'
 require 'net/https'
 require 'uri'
 require 'csv'
+
 # This class serves as the JIRA interface
 # that creates issues within JIRA from vulnerabilities
 # found in Nexpose.
@@ -16,6 +17,68 @@ class JiraHelper
     @options = options
   end
 
+  # Generates the NXID. The NXID is a unique indentifier used to find and update and/or close tickets. 
+  #
+  # * *Args*    :
+  #   - +site_id+ -  Site ID the tickets are being generated for. Required for all ticketing modes
+  #   - +row+ -  Row from the generated Nexpose CSV report. Required for default ('D') mode.
+  #   - +current_ip+ -  The IP address of that this ticket is for. Required for IP mode ('I') mode.
+  #
+  # * *Returns* :
+  #   - NXID string.
+  #
+  def generate_nxid(site_id, row=nil, current_ip=nil)
+    fail 'Site ID is required to generate the NXID.' if site_id.empty?
+    case @options[:ticket_mode]
+      # 'D' Default mode: IP *-* Vulnerability
+      when 'D'
+        fail 'Row is required to generate the NXID in \'D\' mode.' if row.nil? || row.empty?
+        @nxid = "#{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
+      # 'I' IP address mode: IP address -* Vulnerability
+      when 'I'
+        fail 'Current IP is required to generate the NXID in \'I\' mode.' if current_ip.nil? || current_ip.empty?
+        @nxid = "#{site_id}#{current_ip.tr('.','')}"
+      # 'V' mode net yet implemented.
+      # 'V' Vulnerability mode: Vulnerability -* IP address
+      #          when 'V'
+      #            @NXID = "#{site_id}#{row['current_asset_id']}#{row['current_vuln_id']}"
+      else
+        fail 'Could not close tickets - do not understand the ticketing mode!'
+    end
+  end
+
+  # Fetches the Jira ticket key e.g INT-1. This is required to post updates to the Jira.
+  #
+  # * *Args*    :
+  #   - +JQL query string+ -  Jira's Query Language string used to search for a ticket key.
+  #
+  # * *Returns* :
+  #   - Jira ticket key if found, nil otherwise.
+  #
+  def get_jira_key(jql_query)
+    fail 'JQL query string cannot be empty.' if jql_query.empty?
+    headers = { 'Content-Type' => 'application/json',
+                'Accept' => 'application/json' }
+
+    url = URI.parse(("#{@jira_data[:jira_url]}".split("/")[0..-2].join("/") + '/search'))
+    url.query = [url.query, URI.escape(jql_query)].compact.join('&')
+    req = Net::HTTP::Get.new(url.to_s, headers)
+    req.basic_auth @jira_data[:username], @jira_data[:password]
+    resp = Net::HTTP.new(url.host, url.port)
+
+    # Enable this line for debugging the https call.
+    # resp.set_debug_output $stderr
+
+    resp.use_ssl = true if @jira_data[:jira_url].to_s.start_with?('https')
+    resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    response = resp.request(req)
+
+    issues = JSON.parse(response.body)['issues']
+    #TODO: fail(?) if more than one issue exits with a "unique" NXID
+    return nil if issues.nil? || !issues.any? || issues.size > 1
+    return issues[0]['key']
+  end
+
   def create_tickets(tickets)
     fail 'Ticket(s) cannot be empty.' if tickets.empty? || tickets.nil?
     tickets.each do |ticket|
@@ -26,8 +89,10 @@ class JiraHelper
       req.basic_auth @jira_data[:username], @jira_data[:password]
       req.body = ticket
       resp = Net::HTTP.new(url.host, url.port)
+
       # Enable this line for debugging the https call.
       #resp.set_debug_output $stderr
+
       resp.use_ssl = true if @jira_data[:jira_url].to_s.start_with?('https')
       resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
       resp.start { |http| http.request(req) }
@@ -53,7 +118,7 @@ class JiraHelper
   # Prepares and creates tickets in default mode.
   def prepare_tickets_default(vulnerability_list, site_id)
     tickets = []
-    CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
+    CSV.parse(vulnerability_list.chomp, headers: :first_row) do |row|
       # JiraHelper doesn't like new line characters in their summaries.
       summary = row['summary'].gsub(/\n/, ' ')
       ticket = {
@@ -61,7 +126,7 @@ class JiraHelper
               'project' => {
                   'key' => "#{@jira_data[:project]}" },
               'summary' => "#{row['ip_address']} => #{summary}",
-              'description' => "CVSS Score: #{row['cvss_score']} \n\n #{row['fix']} \n\n #{row['url']}",
+              'description' => "CVSS Score: #{row['cvss_score']} \n\n #{row['fix']} \n\n #{row['url']} \n\n\n NXID: #{generate_nxid(site_id, row)}",
               'issuetype' => {
                   'name' => 'Task' }
           }
@@ -71,11 +136,19 @@ class JiraHelper
     tickets
   end
 
-  # Prepares and creates tickets in IP mode.
+  # Prepare tickets from the CSV of vulnerabilities exported from Nexpose. This method batches tickets 
+  # per IP i.e. any vulnerabilities for a single IP in one ticket
+  #
+  #   - +vulnerability_list+ -  CSV of vulnerabilities within Nexpose.
+  #   - +site_id+ -  Site ID the vulnerability list was generate from.
+  #
+  # * *Returns* :
+  #   - List of JSON-formated tickets for updating within Jira.
+  #
   def prepare_tickets_by_ip(vulnerability_list, site_id)
     tickets = []
     current_ip = -1
-    CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
+    CSV.parse(vulnerability_list.chomp, headers: :first_row) do |row|
       if current_ip == -1
         current_ip = row['ip_address']
         @ticket = {
@@ -105,13 +178,145 @@ class JiraHelper
         \n\n"
       end
       unless current_ip == row['ip_address']
-        @ticket = @ticket.to_json
-        tickets.push(@ticket)
+        @ticket['fields']['description'] += "\n\n\n NXID: #{generate_nxid(site_id, row, current_ip)}"
+        tickets.push(@ticket.to_json)
         current_ip = -1
         redo
       end
     end
+    @ticket['fields']['description'] += "\n\n\n NXID: #{generate_nxid(site_id, nil, current_ip)}"
     tickets.push(@ticket.to_json) unless @ticket.nil?
     tickets
+  end
+
+  # Sends ticket closure (in JSON format) to Jira individually (each ticket in the list
+  # as a separate web service call).
+  #
+  # * *Args*    :
+  #   - +tickets+ -  List of Jira ticket Keys to be closed.
+  #
+  def close_tickets(tickets)
+    if tickets.nil? || tickets.empty?
+      #@log.log_message("No tickets to close.")
+      #TODO: Log error
+    else
+      headers = { 'Content-Type' => 'application/json',
+                  'Accept' => 'application/json' }
+
+      tickets.each { |ticket|
+        url = URI.parse(("#{@jira_data[:jira_url]}#{ticket}/transitions"))
+        req = Net::HTTP::Post.new(url.to_s, headers)
+        req.basic_auth @jira_data[:username], @jira_data[:password]
+
+        #TODO: May need to make this customisable as Jira does not allow for some transitions depending on workflow.
+        req.body = {"transition" => {"id" => "2"}, "fields" => {"resolution" => {"name" => "Fixed"}}}.to_json
+
+        resp = Net::HTTP.new(url.host, url.port)
+
+        # Enable this line for debugging the https call.
+        #resp.set_debug_output $stderr
+
+        resp.use_ssl = true
+        resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        resp.start { |http| http.request(req) }
+      }
+    end
+  end
+
+  # Prepare ticket closures from the CSV of vulnerabilities exported from Nexpose.
+  #
+  # * *Args*    :
+  #   - +vulnerability_list+ -  CSV of vulnerabilities within Nexpose.
+  #
+  # * *Returns* :
+  #   - List of Jira ticket Keys to be closed.
+  #
+  def prepare_close_tickets(vulnerability_list, site_id)
+    @nxid = nil
+    tickets = []
+    CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
+      @nxid = generate_nxid(site_id, nil, row['ip_address'])
+      # Query Jira for the ticket by unique id (generated NXID)
+      queried_key = get_jira_key("jql=project=#{@jira_data[:project]} AND description ~ \"NXID: #{@nxid}\" AND (status != Closed AND status != Resolved)&fields=key")
+      if queried_key.nil? || queried_key.empty?
+        #TODO: Log error
+      else
+        #Jira uses a post call to the ticket key path to close the ticket. The "prepared batch of tickets" in this case is just a collection Jira ticket key's to close.
+        tickets.push(queried_key)
+      end
+    end
+    tickets
+  end
+
+  # Sends ticket updates (in JSON format) to Jira individually (each ticket in the list as a
+  # separate HTTP post).
+  #
+  # * *Args*    :
+  #   - +tickets+ -  List of JSON-formatted ticket updates.
+  #
+  def update_tickets(tickets)
+    if (tickets.nil? || tickets.empty?) then
+      #@log.log_message('No tickets to update.')
+	  #TODO: Log error
+    else
+      tickets.each do |ticket_details|
+        headers = {'Content-Type' => 'application/json',
+                   'Accept' => 'application/json'}
+
+        (ticket_details.first.nil?) ? send_whole_ticket = true : send_whole_ticket = false
+
+        url = "#{jira_data[:jira_url]}"
+        url += "#{ticket_details.first}" unless send_whole_ticket
+        uri = URI.parse(url)
+
+        send_whole_ticket ? req = Net::HTTP::Post.new(uri.to_s, headers) : req = Net::HTTP::Put.new(uri.to_s, headers)
+
+        req.basic_auth @jira_data[:username], @jira_data[:password]
+        send_whole_ticket ?
+            req.body = ticket_details.last :
+            req.body = {'update' => {'description' => [{'set' => "#{JSON.parse(ticket_details[1])['fields']['description']}"}]}}.to_json
+
+        resp = Net::HTTP.new(uri.host, uri.port)
+
+        # Enable this line for debugging the https call.
+        #resp.set_debug_output $stderr
+
+        resp.use_ssl = true if uri.to_s.start_with?('https')
+        resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        resp.start { |http| http.request(req) }
+      end
+    end
+  end
+
+  # Prepare ticket updates from the CSV of vulnerabilities exported from Nexpose. This method batches tickets 
+  # per IP i.e. any vulnerabilities for a single IP in one ticket
+  #
+  #   - +vulnerability_list+ -  CSV of vulnerabilities within Nexpose.
+  #   - +site_id+ -  Site ID the vulnerability list was generate from.
+  #
+  # * *Returns* :
+  #   - List of JSON-formated tickets for updating within Jira.
+  #
+  def prepare_update_tickets(vulnerability_list, site_id)
+    fail 'Ticket updates are only supported in IP-address mode.' if @options[:ticket_mode] != 'I'
+    #Jira uses the ticket key to push updates. Since new IPs won't have a Jira key, generate new tickets for all of the IPs found.
+    updated_tickets = prepare_tickets_by_ip(vulnerability_list, site_id)
+    tickets_to_send = []
+
+    #Find the keys that exist (IPs that have tickets already)
+    updated_tickets.each do |ticket|
+      nxid = JSON.parse(ticket)['fields']['description'].squeeze("\n").lines.to_a.last
+      if (nxid.slice! "NXID:").nil?
+        #TODO - log error.
+        #Could not get NXID from the last line in the description. Do not push the invalid description.
+        next
+      end
+      queried_key = get_jira_key("jql=project=#{@jira_data[:project]} AND description ~ \"NXID: #{nxid.strip}\" AND (status != Closed AND status != Resolved)&fields=key")
+      ticket_key_pair = []
+      ticket_key_pair << queried_key
+      ticket_key_pair << ticket
+      tickets_to_send << ticket_key_pair
+    end
+    tickets_to_send
   end
 end
