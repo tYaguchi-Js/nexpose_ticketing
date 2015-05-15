@@ -24,7 +24,7 @@ module NexposeTicketing
     # * *Returns* :
     #   - An array of Nexpose::SiteSummary objects.
     #
-    def all_site_details()
+    def all_site_details
       @nsc.sites
     end
 
@@ -331,10 +331,12 @@ module NexposeTicketing
     def createTagFilters(options = {})
       @defined_tags = nil
       if options.has_key?(:tags)
-        if not options[:tags].nil? and not options[:tags].empty?
+        return if options[:tags].nil?
+        if options[:tags].is_a?(Fixnum)
+          @defined_tags = @nsc.list_tags.select{ |nexposeTag| nexposeTag.id == options[:tags] }
+        else
             ## Split the tags into an array
             tag_strings = options[:tags].strip.split(',')
-
             ## Grab the tag info for the ones we are looking for (if the exist in Nexpose).
             @defined_tags = @nsc.list_tags.select {|nexposeTag| tag_strings.include?(nexposeTag.name)}
         end
