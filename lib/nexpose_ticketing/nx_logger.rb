@@ -31,5 +31,11 @@ module NexposeTicketing
     def log_message(message)
       @log.info(message) if @options[:logging_enabled]
     end
+
+    # Logs a message if logging is enabled.
+    def << (message)
+      @log.info(message) if @options[:logging_enabled]
+    end
+
   end
 end
