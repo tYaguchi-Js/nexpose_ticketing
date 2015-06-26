@@ -22,8 +22,25 @@ module NexposeTicketing
       return riskString
     end
 
+    # Formats SQL query for filtering per asset based on user config options.
+	#
+    # * *Args*    :
+    #   - +options+ -  User configured options for the ticketing service.
+    #
+    # * *Returns* :
+    #   - Returns String - Formatted SQL string for inserting into queries.
+    #
 
-    # Gets all the latests scans.
+    def self.createAssetString(options)
+      if options[:tag_run] && options[:nexpose_item]
+        assetString = "WHERE asset_id = #{options[:nexpose_item]}"
+      else
+        assetString = ""
+      end
+      return assetString
+    end
+
+    # Gets all the latest scans for sites.
     # Returns |site.id| |last_scan_id| |finished|
     def self.last_scans
       'SELECT ds.site_id, ds.last_scan_id, dsc.finished
@@ -31,6 +48,14 @@ module NexposeTicketing
         JOIN dim_scan dsc ON ds.last_scan_id = dsc.scan_id'
     end
 
+    # Gets all the latest scans for tags.
+    # Returns |tag.id| |asset.id| |last_scan_id| |finished|
+    def self.last_tag_scans
+    'select dta.tag_id, dta.asset_id, fa.last_scan_id, fa.scan_finished
+      from dim_tag_asset dta
+      join fact_asset fa using (asset_id)
+      order by dta.tag_id, dta.asset_id, fa.last_scan_id, fa.scan_finished'
+    end
 
     # Gets all delta vulns for all sites sorted by IP.
     #
@@ -47,7 +72,7 @@ module NexposeTicketing
           JOIN
           (
             SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-              FROM dim_asset) s
+              FROM dim_asset #{createAssetString(options)}) s
               ON s.asset_id = fasv.asset_id AND (fasv.scan_id = s.baseline_scan OR fasv.scan_id = s.current_scan)
               GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan, fasv.scan_id
               HAVING NOT baselineComparison(fasv.scan_id, current_scan) = 'Old'
@@ -77,7 +102,7 @@ module NexposeTicketing
           JOIN
           (
             SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-              FROM dim_asset) s
+              FROM dim_asset #{createAssetString(options)}) s
               ON s.asset_id = fasv.asset_id AND (fasv.scan_id = s.baseline_scan OR fasv.scan_id = s.current_scan)
               GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan, fasv.scan_id
               HAVING NOT baselineComparison(fasv.scan_id, current_scan) = 'Old'
@@ -87,7 +112,7 @@ module NexposeTicketing
         JOIN dim_asset da ON subs.asset_id = da.asset_id
         JOIN dim_vulnerability dv ON subs.vulnerability_id = dv.vulnerability_id
         JOIN fact_asset fa ON fa.asset_id = da.asset_id
-	#{createRiskString(options[:riskScore])}
+	      #{createRiskString(options[:riskScore])}
         ORDER BY subs.vulnerability_id, subs.asset_id, davs.solution_id"
     end
     
@@ -108,7 +133,7 @@ module NexposeTicketing
           JOIN
           (
             SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-              FROM dim_asset) s
+              FROM dim_asset #{createAssetString(options)}) s
               ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
               GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
               HAVING baselineComparison(fasv.scan_id, current_scan) = 'New'
@@ -140,7 +165,7 @@ module NexposeTicketing
           JOIN
           (
             SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-              FROM dim_asset) s
+              FROM dim_asset #{createAssetString(options)}) s
               ON s.asset_id = fasv.asset_id AND (fasv.scan_id >=  #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
               GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
               HAVING baselineComparison(fasv.scan_id, current_scan) = 'New'
@@ -172,7 +197,7 @@ module NexposeTicketing
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN (
             SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-            FROM dim_asset
+            FROM dim_asset #{createAssetString(options)}
           ) s ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) = 'Old'
@@ -205,7 +230,7 @@ module NexposeTicketing
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN (
             SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-            FROM dim_asset
+            FROM dim_asset #{createAssetString(options)}
           ) s ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) = 'Old'
@@ -228,7 +253,7 @@ module NexposeTicketing
           JOIN
           (
             SELECT asset_id,lastScan(asset_id) AS current_scan
-            FROM dim_asset
+            FROM dim_asset #{createAssetString(options)}
           ) s ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) IN ('Same','New')
@@ -261,7 +286,7 @@ module NexposeTicketing
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN (
             SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-            FROM dim_asset
+            FROM dim_asset #{createAssetString(options)}
           ) s ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) = 'Old'
@@ -285,7 +310,7 @@ module NexposeTicketing
           JOIN
           (
             SELECT asset_id,lastScan(asset_id) AS current_scan
-            FROM dim_asset
+            FROM dim_asset #{createAssetString(options)}
           ) s ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) IN ('Same','New')
@@ -317,7 +342,7 @@ module NexposeTicketing
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN (
             SELECT asset_id, ip_address, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-            FROM dim_asset
+            FROM dim_asset #{createAssetString(options)}
           ) s ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.ip_address, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) = 'Old'
@@ -329,7 +354,7 @@ module NexposeTicketing
           JOIN
           (
             SELECT asset_id, ip_address, lastScan(asset_id) AS current_scan
-            FROM dim_asset
+            FROM dim_asset #{createAssetString(options)}
           ) s ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
           GROUP BY s.ip_address, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) IN ('Same','New')
@@ -354,7 +379,7 @@ module NexposeTicketing
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN (
             SELECT asset_id, ip_address, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-            FROM dim_asset
+            FROM dim_asset #{createAssetString(options)}
           ) s ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
       	  JOIN fact_asset fa ON fa.asset_id = fasv.asset_id
       	  #{createRiskString(options[:riskScore])}
@@ -368,7 +393,7 @@ module NexposeTicketing
           JOIN
           (
             SELECT da.asset_id, da.ip_address, lastScan(da.asset_id) AS current_scan, fa.riskscore
-            FROM dim_asset da
+            FROM dim_asset da #{createAssetString(options)}
       	    JOIN fact_asset fa ON fa.asset_id = da.asset_id
       	    #{createRiskString(options[:riskScore])}
           ) s ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)

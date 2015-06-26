@@ -162,18 +162,18 @@ class RemedyHelper
   # * *Returns* :
   #   - List of savon-formated (hash) tickets for creating within Remedy.
   #
-  def prepare_create_tickets(vulnerability_list, site_id)
+  def prepare_create_tickets(vulnerability_list, nexpose_identifier_id)
     @ticket = Hash.new(-1)
     case @options[:ticket_mode]
     # 'D' Default mode: IP *-* Vulnerability
     when 'D'
-      prepare_create_tickets_default(vulnerability_list, site_id)
+      prepare_create_tickets_default(vulnerability_list, nexpose_identifier_id)
     # 'I' IP address mode: IP address -* Vulnerability
     when 'I'
-      prepare_create_tickets_by_ip(vulnerability_list, site_id)
+      prepare_create_tickets_by_ip(vulnerability_list, nexpose_identifier_id)
     # 'V' Vulnerability mode: Vulnerability -* IP address
     when 'V'
-      prepare_create_tickets_by_vulnerability(vulnerability_list, site_id)
+      prepare_create_tickets_by_vulnerability(vulnerability_list, nexpose_identifier_id)
     else
       fail 'No ticketing mode selected.'
     end
@@ -188,15 +188,15 @@ class RemedyHelper
   # * *Returns* :
   #   - List of savon-formated (hash) tickets for creating within Remedy.
   #
-  def prepare_update_tickets(vulnerability_list, site_id)
+  def prepare_update_tickets(vulnerability_list, nexpose_identifier_id)
     @ticket = Hash.new(-1)
     case @options[:ticket_mode]
       # 'I' IP address mode: IP address -* Vulnerability
       when 'I'
-        prepare_update_tickets_by_ip(vulnerability_list, site_id)
+        prepare_update_tickets_by_ip(vulnerability_list, nexpose_identifier_id)
       # 'V' Vulnerability mode: Vulnerability -* IP address
       when 'V'
-        prepare_update_tickets_by_vulnerability(vulnerability_list, site_id)
+        prepare_update_tickets_by_vulnerability(vulnerability_list, nexpose_identifier_id)
       else
         fail 'No ticketing mode selected.'
     end
@@ -213,7 +213,7 @@ class RemedyHelper
   # * *Returns* :
   #   - List of savon-formated (hash) tickets for creating within Remedy.
   #
-  def prepare_create_tickets_default(vulnerability_list, site_id)
+  def prepare_create_tickets_default(vulnerability_list, nexpose_identifier_id)
     @log.log_message("Preparing tickets by default method.")
     tickets = []
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
@@ -229,7 +229,7 @@ class RemedyHelper
         'Action' => 'CREATE',
         'Summary' => "#{row['ip_address']} => #{row['summary']}",
         'Notes' => "Summary: #{row['summary']} \n\nFix: #{row['fix']} \n\nURL: #{row['url']}
-                    \n\nNXID: #{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}",
+                    \n\nNXID: #{nexpose_identifier_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}",
         'Urgency' => '1-Critical'
       }
       tickets.push(ticket)
@@ -248,14 +248,14 @@ class RemedyHelper
   # * *Returns* :
   #   - List of savon-formated (hash) tickets for creating within Remedy.
   #
-  def prepare_create_tickets_by_ip(vulnerability_list, site_id)
+  def prepare_create_tickets_by_ip(vulnerability_list, nexpose_identifier_id)
     @log.log_message('Preparing tickets by IP address.')
     tickets = []
     current_ip = -1
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
       if current_ip == -1 
         current_ip = row['ip_address']
-        @log.log_message("Creating ticket with IP address: #{row['ip_address']}, Asset ID:  #{row['asset_id']} and Site ID: #{site_id}")
+        @log.log_message("Creating ticket with IP address: #{row['ip_address']}, Asset ID:  #{row['asset_id']} and Nexpose Identifier ID: #{nexpose_identifier_id}")
         @ticket = {
           'First_Name' => "#{@remedy_data[:first_name]}",
           'Impact' => '1-Extensive/Widespread',
@@ -279,14 +279,14 @@ class RemedyHelper
       end
       unless current_ip == row['ip_address']
         # NXID in the work_notes is the unique identifier used to query incidents to update them.
-        @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_ip}"
+        @ticket['Notes'] += "\n\nNXID: #{nexpose_identifier_id}#{current_ip}"
         tickets.push(@ticket)
         current_ip = -1
         redo
       end
     end
     # NXID in the work_notes is the unique identifier used to query incidents to update them.
-    @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_ip}"
+    @ticket['Notes'] += "\n\nNXID: #{nexpose_identifier_id}#{current_ip}"
     tickets.push(@ticket) unless @ticket.nil?
     tickets
   end
@@ -303,7 +303,7 @@ class RemedyHelper
   # * *Returns* :
   #   - List of savon-formated (hash) tickets for creating within Remedy.
   #
-  def prepare_create_tickets_by_vulnerability(vulnerability_list, site_id)
+  def prepare_create_tickets_by_vulnerability(vulnerability_list, nexpose_identifier_id)
     @log.log_message("Preparing tickets by vulnerability.")
     tickets = []
     current_vuln_id = -1
@@ -317,7 +317,7 @@ class RemedyHelper
       current_vuln_id = row['vulnerability_id']
       current_solution_id = row['solution_id']
       current_asset_id =  row['asset_id']
-      @log.log_message("Creating ticket with vulnerability id: #{row['vulnerability_id']}, Asset ID:  #{row['asset_id']} and Site ID: #{site_id}")
+      @log.log_message("Creating ticket with vulnerability id: #{row['vulnerability_id']}, Asset ID:  #{row['asset_id']} and Nexpose Identifier ID: #{nexpose_identifier_id}")
       summary = "Vulnerability: #{row['title']}"
 
       #Remedy has a summary field max size of 100 so truncate any summaries that are larger than that and place the full summary in the notes.
@@ -373,7 +373,7 @@ class RemedyHelper
     end
     unless current_vuln_id == row['vulnerability_id']
       # NXID in the work_notes is the unique identifier used to query incidents to update them.
-      @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_asset_id}#{current_vuln_id}"
+      @ticket['Notes'] += "\n\nNXID: #{nexpose_identifier_id}#{current_asset_id}#{current_vuln_id}"
       current_vuln_id = -1
       current_solution_id = -1
       current_asset_id = -1
@@ -383,7 +383,7 @@ class RemedyHelper
     end
   end
   # NXID in the work_notes is the unique identifier used to query incidents to update them.
-  @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_asset_id}#{current_vuln_id}"
+  @ticket['Notes'] += "\n\nNXID: #{nexpose_identifier_id}#{current_asset_id}#{current_vuln_id}"
   @ticket = format_notes_by_vulnerability(@ticket, full_summary)
   tickets.push(@ticket) unless @ticket.nil?
   tickets
@@ -413,7 +413,7 @@ class RemedyHelper
   # * *Returns* :
   #   - List of savon-formated (hash) tickets for updating within Remedy.
   #
-  def prepare_update_tickets_by_ip(vulnerability_list, site_id)
+  def prepare_update_tickets_by_ip(vulnerability_list, nexpose_identifier_id)
     fail 'Ticket updates are only supported in IP-address mode.' if @options[:ticket_mode] != 'I'
     @ticket = Hash.new(-1)
     
@@ -427,11 +427,11 @@ class RemedyHelper
         ticket_status = row['comparison']
         
         # Query Remedy for the incident by unique id (generated NXID)
-        queried_incident = query_for_ticket("NXID: #{site_id}#{row['ip_address']}")
+        queried_incident = query_for_ticket("NXID: #{nexpose_identifier_id}#{row['ip_address']}")
         if queried_incident.nil? || queried_incident.empty?
-          @log.log_message("No incident found for NXID: #{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}")
+          @log.log_message("No incident found for NXID: #{nexpose_identifier_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}")
         else
-          @log.log_message("Creating ticket update with IP address: #{row['ip_address']} for site with ID: #{site_id}")
+          @log.log_message("Creating ticket update with IP address: #{row['ip_address']} for Nexpose Identifier with ID: #{nexpose_identifier_id}")
           @log.log_message("Ticket status #{ticket_status}")
           # Remedy incident updates require populating all fields.
           @ticket = extract_queried_incident(queried_incident, "++ #{row['comparison']} Vulnerabilities ++++++++++++++++++++++++++\n")
@@ -455,14 +455,14 @@ class RemedyHelper
       end
       unless current_ip == row['ip_address']
         # NXID in the work_notes is the unique identifier used to query incidents to update them.
-        @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_ip}"
+        @ticket['Notes'] += "\n\nNXID: #{nexpose_identifier_id}#{current_ip}"
         tickets.push(@ticket)
         current_ip = -1
         redo
       end
     end
     # NXID in the work_notes is the unique identifier used to query incidents to update them.
-    @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_ip}" unless @ticket.empty?
+    @ticket['Notes'] += "\n\nNXID: #{nexpose_identifier_id}#{current_ip}" unless @ticket.empty?
     tickets.push(@ticket) unless @ticket.nil? || @ticket.empty?
     tickets
   end
@@ -477,7 +477,7 @@ class RemedyHelper
   # * *Returns* :
   #   - List of savon-formated (hash) tickets for updating within Remedy.
   #
-  def prepare_update_tickets_by_vulnerability(vulnerability_list, site_id)
+  def prepare_update_tickets_by_vulnerability(vulnerability_list, nexpose_identifier_id)
     fail 'Ticket updates are only supported in IP-address mode.' if @options[:ticket_mode] != 'V'
     @ticket = Hash.new(-1)
 
@@ -497,12 +497,12 @@ class RemedyHelper
         current_solution_id = -1
 
         # Query Remedy for the incident by unique id (generated NXID)
-        queried_incident = query_for_ticket("NXID: #{site_id}#{row['asset_id']}#{row['vulnerability_id']}")
+        queried_incident = query_for_ticket("NXID: #{nexpose_identifier_id}#{row['asset_id']}#{row['vulnerability_id']}")
         if queried_incident.nil? || queried_incident.empty?
-          @log.log_message("No incident found for NXID: #{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}. Creating...")
+          @log.log_message("No incident found for NXID: #{nexpose_identifier_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}. Creating...")
           new_ticket_csv = vulnerability_list.split("\n").first
           new_ticket_csv += "\n#{row.to_s}"
-          new_ticket = prepare_create_tickets_by_vulnerability(new_ticket_csv, site_id)
+          new_ticket = prepare_create_tickets_by_vulnerability(new_ticket_csv, nexpose_identifier_id)
           @log.log_message('Created ticket. Sending to Remedy...')
           create_tickets(new_ticket)
           @log.log_message('Ticket sent. Performing update for ticket...')
@@ -510,7 +510,7 @@ class RemedyHelper
           current_vuln_id = -1
           redo
         else
-          @log.log_message("Creating ticket update for vulnerability with ID: #{row['vulnerability_id']}, Asset ID:  #{row['asset_id']} and Site ID: #{site_id}. Ticket status #{ticket_status}.")
+          @log.log_message("Creating ticket update for vulnerability with ID: #{row['vulnerability_id']}, Asset ID:  #{row['asset_id']} and Nexpose Identifier ID: #{nexpose_identifier_id}. Ticket status #{ticket_status}.")
           # Remedy incident updates require populating all fields.
           @ticket = extract_queried_incident(queried_incident, "++ #{row['comparison']} Assets ++++++++++++++++++++++\n")
         end
@@ -548,7 +548,7 @@ class RemedyHelper
       unless current_vuln_id == row['vulnerability_id']
         # NXID in the work_notes is the unique identifier used to query incidents to update them.
         @ticket['Notes'] += "\n\n" + current_solutions_text
-        @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_asset_id}#{current_vuln_id}"
+        @ticket['Notes'] += "\n\nNXID: #{nexpose_identifier_id}#{current_asset_id}#{current_vuln_id}"
         tickets.push(@ticket)
         current_vuln_id = -1
         current_solution_id = -1
@@ -558,7 +558,7 @@ class RemedyHelper
     end
     # NXID in the work_notes is the unique identifier used to query incidents to update them.
     @ticket['Notes'] += current_solutions_text
-    @ticket['Notes'] += "\n\nNXID: #{site_id}#{current_asset_id}#{current_vuln_id}" unless @ticket.empty?
+    @ticket['Notes'] += "\n\nNXID: #{nexpose_identifier_id}#{current_asset_id}#{current_vuln_id}" unless @ticket.empty?
     tickets.push(@ticket) unless @ticket.nil? || @ticket.empty?
     tickets
   end
@@ -692,7 +692,7 @@ class RemedyHelper
   # * *Returns* :
   #   - List of savon-formated (hash) tickets for closing within Remedy.
   #
-  def prepare_close_tickets(vulnerability_list, site_id)
+  def prepare_close_tickets(vulnerability_list, nexpose_identifier_id)
     fail 'Ticket closures are only supported in default mode.' if @options[:ticket_mode] == 'I'
     @log.log_message('Preparing ticket closures by default method.')
     @nxid = nil
@@ -701,13 +701,13 @@ class RemedyHelper
       case @options[:ticket_mode]
         # 'D' Default mode: IP *-* Vulnerability
         when 'D'
-          @nxid = "#{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
+          @nxid = "#{nexpose_identifier_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
         # 'I' IP address mode: IP address -* Vulnerability
         when 'I'
-          @nxid = "#{site_id}#{row['current_ip']}"
+          @nxid = "#{nexpose_identifier_id}#{row['current_ip']}"
         # 'V' Vulnerability mode: Vulnerability -* IP address
         when 'V'
-          @nxid = "#{site_id}#{row['current_asset_id']}#{row['current_vuln_id']}"
+          @nxid = "#{nexpose_identifier_id}#{row['current_asset_id']}#{row['current_vuln_id']}"
         else
           fail 'Could not close tickets - do not understand the ticketing mode!'
       end

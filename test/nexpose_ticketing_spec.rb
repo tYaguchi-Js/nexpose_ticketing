@@ -47,7 +47,7 @@ describe 'Ticketing service' do
   it 'should detect a new scan with no new vulnerability data and no new sites' do
     no_file = File.join(File.dirname(__FILE__), 'no_file.csv')
     options = { file_name: no_file }
-    @ts.nexpose_site_histories = { '1' => 3 }
+    @ts.nexpose_item_histories = { '1' => 3 }
     file_site_histories = { '1' => '3' }
     @tr.should_receive(:save_last_scans).with(options[:file_name])
     processing = @ts.delta_site_report(@tr, options, @helper, file_site_histories, no_file)
@@ -57,7 +57,7 @@ describe 'Ticketing service' do
   it 'should detect a new scan with new vulnerabilities' do
     no_file = File.join(File.dirname(__FILE__), 'no_file.csv')
     options = { file_name: no_file }
-    @ts.nexpose_site_histories = { '1' => 4 }
+    @ts.nexpose_item_histories = { '1' => 4 }
     file_site_histories = { '1' => '3' }
     @ts.should_receive(:delta_site_new_scan).and_return(false)
     @tr.should_receive(:save_last_scans).with(options[:file_name])
@@ -68,7 +68,7 @@ describe 'Ticketing service' do
   it 'should detect a new site in nexpose' do
     no_file = File.join(File.dirname(__FILE__), 'no_file.csv')
     options = { file_name: no_file }
-    @ts.nexpose_site_histories = { '1' => 4 }
+    @ts.nexpose_item_histories = { '1' => 4 }
     @ts.should_receive(:full_new_site_report).and_return(false)
     @tr.should_receive(:save_last_scans).with(options[:file_name])
     processing = @ts.delta_site_report(@tr, options, @helper, { siteid: '-1' }, no_file)

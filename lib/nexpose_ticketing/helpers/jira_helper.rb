@@ -22,28 +22,28 @@ class JiraHelper
   # Generates the NXID. The NXID is a unique identifier used to find and update and/or close tickets.
   #
   # * *Args*    :
-  #   - +site_id+ -  Site ID the tickets are being generated for. Required for all ticketing modes
+  #   - +nexpose_identifier_id+ -  Site/TAG ID the tickets are being generated for. Required for all ticketing modes
   #   - +row+ -  Row from the generated Nexpose CSV report. Required for default ('D') mode.
   #   - +current_ip+ -  The IP address of that this ticket is for. Required for IP mode ('I') mode.
   #
   # * *Returns* :
   #   - NXID string.
   #
-  def generate_nxid(site_id, row=nil, current_ip=nil)
-    fail 'Site ID is required to generate the NXID.' if site_id.empty?
+  def generate_nxid(nexpose_identifier_id, row=nil, current_ip=nil)
+    fail 'Nexpose Identifier ID is required to generate the NXID.' if nexpose_identifier_id.empty?
     case @options[:ticket_mode]
       # 'D' Default mode: IP *-* Vulnerability
       when 'D'
         fail 'Row is required to generate the NXID in \'D\' mode.' if row.nil? || row.empty?
-        @nxid = "#{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
+        @nxid = "#{nexpose_identifier_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
       # 'I' IP address mode: IP address -* Vulnerability
       when 'I'
         fail 'Current IP is required to generate the NXID in \'I\' mode.' if current_ip.nil? || current_ip.empty?
-        @nxid = "#{site_id}#{current_ip.tr('.','')}"
+        @nxid = "#{nexpose_identifier_id}#{current_ip.tr('.','')}"
       # 'V' mode net yet implemented.
       # 'V' Vulnerability mode: Vulnerability -* IP address
       #          when 'V'
-      #            @NXID = "#{site_id}#{row['current_asset_id']}#{row['current_vuln_id']}"
+      #            @NXID = "#{nexpose_identifier_id}#{row['current_asset_id']}#{row['current_vuln_id']}"
       else
         fail 'Could not close tickets - do not understand the ticketing mode!'
     end
@@ -150,22 +150,22 @@ class JiraHelper
 
   # Prepares tickets from the CSV.
   # TODO Implement V Version.
-  def prepare_create_tickets(vulnerability_list, site_id)
+  def prepare_create_tickets(vulnerability_list, nexpose_identifier_id)
     @ticket = Hash.new(-1)
     case @options[:ticket_mode]
     # 'D' Default IP *-* Vulnerability
     when 'D'
-      prepare_tickets_default(vulnerability_list, site_id)
+      prepare_tickets_default(vulnerability_list, nexpose_identifier_id)
     # 'I' IP address -* Vulnerability
     when 'I'
-      prepare_tickets_by_ip(vulnerability_list, site_id)
+      prepare_tickets_by_ip(vulnerability_list, nexpose_identifier_id)
     else
         fail 'Unsupported ticketing mode selected.'
     end
   end
 
   # Prepares and creates tickets in default mode.
-  def prepare_tickets_default(vulnerability_list, site_id)
+  def prepare_tickets_default(vulnerability_list, nexpose_identifier_id)
     @log.log_message('Preparing tickets for default mode.')
     tickets = []
     CSV.parse(vulnerability_list.chomp, headers: :first_row) do |row|
@@ -176,7 +176,7 @@ class JiraHelper
               'project' => {
                   'key' => "#{@jira_data[:project]}" },
               'summary' => "#{row['ip_address']} => #{summary}",
-              'description' => "CVSS Score: #{row['cvss_score']} \n\n #{row['fix']} \n\n #{row['url']} \n\n\n NXID: #{generate_nxid(site_id, row)}",
+              'description' => "CVSS Score: #{row['cvss_score']} \n\n #{row['fix']} \n\n #{row['url']} \n\n\n NXID: #{generate_nxid(nexpose_identifier_id, row)}",
               'issuetype' => {
                   'name' => 'Task' }
           }
@@ -190,12 +190,12 @@ class JiraHelper
   # per IP i.e. any vulnerabilities for a single IP in one ticket
   #
   #   - +vulnerability_list+ -  CSV of vulnerabilities within Nexpose.
-  #   - +site_id+ -  Site ID the vulnerability list was generate from.
+  #   - +nexpose_identifier_id+ -  Site/TAG ID the vulnerability list was generate from.
   #
   # * *Returns* :
   #   - List of JSON-formatted tickets for updating within Jira.
   #
-  def prepare_tickets_by_ip(vulnerability_list, site_id)
+  def prepare_tickets_by_ip(vulnerability_list, nexpose_identifier_id)
     @log.log_message('Preparing tickets for IP mode.')
     tickets = []
     current_ip = -1
@@ -229,13 +229,13 @@ class JiraHelper
         \n\n"
       end
       unless current_ip == row['ip_address']
-        @ticket['fields']['description'] += "\n\n\n NXID: #{generate_nxid(site_id, row, current_ip)}"
+        @ticket['fields']['description'] += "\n\n\n NXID: #{generate_nxid(nexpose_identifier_id, row, current_ip)}"
         tickets.push(@ticket.to_json)
         current_ip = -1
         redo
       end
     end
-    @ticket['fields']['description'] += "\n\n\n NXID: #{generate_nxid(site_id, nil, current_ip)}"
+    @ticket['fields']['description'] += "\n\n\n NXID: #{generate_nxid(nexpose_identifier_id, nil, current_ip)}"
     tickets.push(@ticket.to_json) unless @ticket.nil?
     tickets
   end
@@ -304,12 +304,12 @@ class JiraHelper
   # * *Returns* :
   #   - List of Jira ticket Keys to be closed.
   #
-  def prepare_close_tickets(vulnerability_list, site_id)
+  def prepare_close_tickets(vulnerability_list, nexpose_identifier_id)
     @log.log_message('Preparing tickets to close.')
     @nxid = nil
     tickets = []
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
-      @nxid = generate_nxid(site_id, nil, row['ip_address'])
+      @nxid = generate_nxid(nexpose_identifier_id, nil, row['ip_address'])
       # Query Jira for the ticket by unique id (generated NXID)
       queried_key = get_jira_key("jql=project=#{@jira_data[:project]} AND description ~ \"NXID: #{@nxid}\" AND (status != #{@jira_data[:close_step_name]})&fields=key")
       if queried_key.nil? || queried_key.empty?
@@ -365,16 +365,16 @@ class JiraHelper
   # per IP i.e. any vulnerabilities for a single IP in one ticket
   #
   #   - +vulnerability_list+ -  CSV of vulnerabilities within Nexpose.
-  #   - +site_id+ -  Site ID the vulnerability list was generate from.
+  #   - +nexpose_identifier_id+ -  Site/TAG ID the vulnerability list was generate from.
   #
   # * *Returns* :
   #   - List of JSON-formated tickets for updating within Jira.
   #
-  def prepare_update_tickets(vulnerability_list, site_id)
+  def prepare_update_tickets(vulnerability_list, nexpose_identifier_id)
     fail 'Ticket updates are only supported in IP-address mode.' if @options[:ticket_mode] != 'I'
     @log.log_message('Preparing tickets to update.')
     #Jira uses the ticket key to push updates. Since new IPs won't have a Jira key, generate new tickets for all of the IPs found.
-    updated_tickets = prepare_tickets_by_ip(vulnerability_list, site_id)
+    updated_tickets = prepare_tickets_by_ip(vulnerability_list, nexpose_identifier_id)
     tickets_to_send = []
 
     #Find the keys that exist (IPs that have tickets already)

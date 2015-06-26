@@ -52,15 +52,15 @@ class ServiceDeskHelper
         db.close()
     end
 
-    def prepare_create_tickets(vulnerability_list, site_id)
+    def prepare_create_tickets(vulnerability_list, nexpose_identifier_id)
         @log.log_message('Preparing ticket requests...')
         case @options[:ticket_mode]
             # 'D' Default mode: IP *-* Vulnerability
             when 'D'
-                tickets = create_tickets_by_default(vulnerability_list, site_id)
+                tickets = create_tickets_by_default(vulnerability_list, nexpose_identifier_id)
             # 'I' IP address mode: IP address -* Vulnerability
             when 'I'
-                tickets = create_tickets_by_ip(vulnerability_list, site_id)
+                tickets = create_tickets_by_ip(vulnerability_list, nexpose_identifier_id)
             else
                 fail 'No ticketing mode selected.'
         end
@@ -143,27 +143,27 @@ class ServiceDeskHelper
     end
 
     ## Given a bunch of vulnerabilities that passed the filters, make tickets for each one
-    def create_tickets_by_default(vulnerability_list, site_id)
+    def create_tickets_by_default(vulnerability_list, nexpose_identifier_id)
         @log.log_message('Preparing tickets by vulnerability...')
         tickets = []
         CSV.parse( vulnerability_list.chomp, headers: :first_row )  do |vuln|
             subject = "#{vuln['ip_address']}: #{vuln['summary']}"
             description = "Host: #{ip_address}\nSummary: #{vuln['summary']}\nFix: #{vuln['fix']}\nURL: #{vuln['url']}"
 
-            tickets << { :action => :create, :nxid => "#{site_id}#{vuln['asset_id']}#{vuln['vulnerability_id']}#{vuln['solution_id']}",
+            tickets << { :action => :create, :nxid => "#{nexpose_identifier_id}#{vuln['asset_id']}#{vuln['vulnerability_id']}#{vuln['solution_id']}",
                          :description => create_ticket_request( subject, description ) }
         end
         return tickets
     end
 
 
-    def create_tickets_by_ip(vulnerability_list, site_id)
+    def create_tickets_by_ip(vulnerability_list, nexpose_identifier_id)
         @log.log_message('Preparing tickets by ip')
         tickets = []
         hostVulns = {}
         CSV.parse( vulnerability_list.chomp, headers: :first_row )  do |vuln|
-            hostVulns["#{site_id}#{vuln['ip_address']}"] = { :ip => vuln['ip_address'], :description => "" } if not hostVulns.has_key?("#{site_id}#{vuln['ip_address']}")
-            hostVulns["#{site_id}#{vuln['ip_address']}"][:description] += "Summary: #{vuln['summary']}\nFix: #{vuln['fix']}\nURL: #{vuln['url']}\n\n"
+            hostVulns["#{nexpose_identifier_id}#{vuln['ip_address']}"] = { :ip => vuln['ip_address'], :description => "" } if not hostVulns.has_key?("#{nexpose_identifier_id}#{vuln['ip_address']}")
+            hostVulns["#{nexpose_identifier_id}#{vuln['ip_address']}"][:description] += "Summary: #{vuln['summary']}\nFix: #{vuln['fix']}\nURL: #{vuln['url']}\n\n"
         end
 
         hostVulns.each do |nxid, vulnInfo|
@@ -260,15 +260,15 @@ class ServiceDeskHelper
     end
 
     
-    def prepare_update_tickets(vulnerability_list, site_id)
+    def prepare_update_tickets(vulnerability_list, nexpose_identifier_id)
         fail 'Ticket updates are only supported in IP-address mode.' if @options[:ticket_mode] != 'I'
 
         @log.log_message('Preparing ticket updates by IP address.')
         tickets = []
         hostVulns={}
         CSV.parse( vulnerability_list.chomp, headers: :first_row )  do |vuln|
-            hostVulns["#{site_id}#{vuln['ip_address']}"] = { :ip => vuln['ip_address'], :description => "" } if not hostVulns.has_key?(vuln['asset_id'])
-            hostVulns["#{site_id}#{vuln['ip_address']}"][:description] += "Summary: #{vuln['summary']}\nFix: #{vuln['fix']}\nURL: #{vuln['url']}\n\n"
+            hostVulns["#{nexpose_identifier_id}#{vuln['ip_address']}"] = { :ip => vuln['ip_address'], :description => "" } if not hostVulns.has_key?(vuln['asset_id'])
+            hostVulns["#{nexpose_identifier_id}#{vuln['ip_address']}"][:description] += "Summary: #{vuln['summary']}\nFix: #{vuln['fix']}\nURL: #{vuln['url']}\n\n"
         end
 
         hostVulns.each do |nxid, vulnInfo|
@@ -308,7 +308,7 @@ class ServiceDeskHelper
     # * *Returns* :
     #   - List of savon-formated (hash) tickets for closing within ServiceDesk.
     #
-    def prepare_close_tickets(vulnerability_list, site_id)
+    def prepare_close_tickets(vulnerability_list, nexpose_identifier_id)
       fail 'Ticket closures are only supported in default mode.' if @options[:ticket_mode] == 'I'
       @log.log_message('Preparing ticket closures by default method.')
       @nxid = nil
@@ -317,13 +317,13 @@ class ServiceDeskHelper
         case @options[:ticket_mode]
           # 'D' Default mode: IP *-* Vulnerability
           when 'D'
-            @nxid = "#{site_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
+            @nxid = "#{nexpose_identifier_id}#{row['asset_id']}#{row['vulnerability_id']}#{row['solution_id']}"
           # 'I' IP address mode: IP address -* Vulnerability
           when 'I'
-            @nxid = "#{site_id}#{row['current_ip']}"
+            @nxid = "#{nexpose_identifier_id}#{row['current_ip']}"
           # 'V' Vulnerability mode: Vulnerability -* IP address
 #          when 'V'
-#            @NXID = "#{site_id}#{row['current_asset_id']}#{row['current_vuln_id']}"
+#            @NXID = "#{nexpose_identifier_id}#{row['current_asset_id']}#{row['current_vuln_id']}"
           else
             fail 'Could not close tickets - do not understand the ticketing mode!'
         end

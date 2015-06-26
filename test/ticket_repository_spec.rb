@@ -83,12 +83,12 @@ describe 'Ticketing repository' do
   
   it 'delta vuns should raise an exception if no reported scan id is defined' do
     report_config = double('Nexpose::AdhocReportConfig')
-    expect{@tr.new_vulns_sites({ site: '1' }, report_config)}.to raise_error
+    expect{@tr.new_vulns({ site: '1' }, report_config)}.to raise_error
   end
 
   it 'delta vuns should raise an exception if no site is defined' do
     report_config = double('Nexpose::AdhocReportConfig')
-    expect{@tr.new_vulns_sites({}, report_config)}.to raise_error
+    expect{@tr.new_vulns({}, report_config)}.to raise_error
   end
 
   it 'delta vuns should generate a report with a site and a scan id defined' do
@@ -98,7 +98,7 @@ describe 'Ticketing repository' do
     report_config.should_receive(:add_filter).with('site', '1')
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
-    @tr.new_vulns_sites({ site_id: '1', scan_id: 1 }, report_config)
+    @tr.new_vulns({ site_id: '1', scan_id: 1 }, report_config)
   end
   
   it 'should generate a closed vulnerabilities report with all vulnerabilities and a site defined' do
@@ -108,7 +108,7 @@ describe 'Ticketing repository' do
     report_config.should_receive(:add_filter).with('site', anything).at_most(:twice)
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
-    @tr.old_vulns_sites({ site_id: '1', scan_id: 1 }, report_config)
+    @tr.old_vulns({ site_id: '1', scan_id: 1 }, report_config)
   end
   
   it 'should generate an all vulnerabilities report with a site and a scan id defined' do
@@ -118,6 +118,6 @@ describe 'Ticketing repository' do
     report_config.should_receive(:add_filter).with('site', '1')
     report_config.should_receive(:add_filter).with('vuln-severity', anything)
     report_config.should_receive(:generate).with(nil)
-    @tr.all_vulns_sites({ site_id: '1', scan_id: 1 }, report_config)
+    @tr.all_vulns_since({ site_id: '1', scan_id: 1 }, report_config)
   end
 end
