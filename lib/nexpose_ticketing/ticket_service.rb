@@ -108,8 +108,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     # Prepares all the local and nexpose historical data.
     def prepare_historical_data(ticket_repository, options)
       (options[:tag_run]) ?
-          historical_scan_file = File.join(File.dirname(__FILE__), "#{options[:file_name]}") :
-          historical_scan_file = File.join(File.dirname(__FILE__), "#{options[:tag_file_name]}")
+          historical_scan_file = File.join(File.dirname(__FILE__), "#{options[:tag_file_name]}") :
+          historical_scan_file = File.join(File.dirname(__FILE__), "#{options[:file_name]}")
+
       if File.exists?(historical_scan_file)
         log_message("Reading historical CSV file: #{historical_scan_file}.")
         file_site_histories = ticket_repository.read_last_scans(historical_scan_file)
@@ -373,17 +374,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     # Starts the Ticketing Service.
     def start
+      #Decide if this is a tag run (tags always override sites as the API does not allow for the combination of the two)
+      @options[:tag_run] = !@options[:tags].nil? && !@options[:tags].empty?
+
       # Checks if the csv historical file already exists && reads it, otherwise create it && assume first time run.
       file_site_histories = prepare_historical_data(@ticket_repository, @options)
       historical_scan_file = File.join(File.dirname(__FILE__), "#{@options[:file_name]}")
       historical_tag_file = File.join(File.dirname(__FILE__), "#{@options[:tag_file_name]}")
 
-      #Decide if this is a tag run (tags always override sites as the API does not allow for the combination of the two)
-      @options[:tag_run] = !@options[:tags].nil? && !@options[:tags].empty?
-
       # If we didn't specify a site || first time run (no scan history), then it gets all the vulnerabilities.
-      if ((((@options[:sites].nil? || @options[:sites].empty?) && !@options[:tag_run]) || @options[:tag_run]) && file_site_histories.nil?)
-        log_message('Storing current scan state before obtaining all vulnerabilities.')
+      if (((@options[:sites].nil? || @options[:sites].empty? || file_site_histories.nil?) && !@options[:tag_run]) || (@options[:tag_run] && file_site_histories.nil?))
+      log_message('Storing current scan state before obtaining all vulnerabilities.')
         current_scan_state = ticket_repository.load_last_scans(@options)
 
         if (options[:sites].nil? || options[:sites].empty?) && (!@options[:tag_run])
