@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name                  = 'nexpose_ticketing'
-  s.version               = '0.8.2'
+  s.version               = '0.8.3'
   s.homepage              = 'https://github.com/rapid7/nexpose_ticketing'
   s.summary               = 'Ruby Nexpose Ticketing Engine.'
   s.description           = 'This gem provides a Ruby implementation of different integrations with ticketing services for Nexpose.'

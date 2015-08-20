@@ -191,15 +191,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           else
             delta_site_new_scan(ticket_repository, item_id, options, helper, file_site_histories)
           end
-          #Update the historic file
-          new_tag_asset_list = historic_tag_configuration.merge(new_tag_configuration)
-          trimmed_csv = []
-          trimmed_csv << 'asset_id, last_scan_id'
-          new_tag_asset_list.each do |asset_id, last_scan_id|
-            trimmed_csv << "#{asset_id},#{last_scan_id}"
+          if(options[:tag_run])
+            #Update the historic file
+            new_tag_asset_list = historic_tag_configuration.merge(new_tag_configuration)
+            trimmed_csv = []
+            trimmed_csv << 'asset_id, last_scan_id'
+            new_tag_asset_list.each do |asset_id, last_scan_id|
+              trimmed_csv << "#{asset_id},#{last_scan_id}"
+            end
+            ticket_repository.save_to_file(tag_assets_historic_file, trimmed_csv)
+            File.delete(tag_assets_tmp_file)
           end
-          ticket_repository.save_to_file(tag_assets_historic_file, trimmed_csv)
-          File.delete(tag_assets_tmp_file)
           no_processing = false
         end
       end
