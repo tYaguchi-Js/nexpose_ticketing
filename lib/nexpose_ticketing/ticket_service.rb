@@ -52,9 +52,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     require 'yaml'
     require 'fileutils'
     require 'nexpose_ticketing/ticket_repository'
+    require 'nexpose_ticketing'
+    require 'nexpose_ticketing/nx_logger'
+    require 'nexpose_ticketing/version'
 
     TICKET_SERVICE_CONFIG_PATH =  File.join(File.dirname(__FILE__), '/config/ticket_service.config')
-    LOGGER_FILE = File.join(File.dirname(__FILE__), '/log/ticket_service.log')
+    LOGGER_FILE = File.join(File.dirname(__FILE__), '/logs/ticket_service.log')
 
     attr_accessor :helper_data, :nexpose_data, :options, :ticket_repository, :first_time, :nexpose_item_histories
 
@@ -90,14 +93,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     end
 
     def setup_logging(enabled = false)
-      if enabled
-        require 'logger'
-        directory = File.dirname(LOGGER_FILE)
-        FileUtils.mkdir_p(directory) unless File.directory?(directory)
-        @log = Logger.new(LOGGER_FILE, 'monthly')
-        @log.level = Logger::INFO
-        log_message('Logging enabled, starting service.')
-      end
+      helper_log = NexposeTicketing::NxLogger.instance
+      helper_log.setup_logging(@options[:logging_enabled],
+                               @options[:log_level])
+
+      return unless enabled
+      require 'logger'
+      directory = File.dirname(LOGGER_FILE)
+      FileUtils.mkdir_p(directory) unless File.directory?(directory)
+      @log = Logger.new(LOGGER_FILE, 'monthly')
+      @log.level = Logger::INFO
+      log_message('Logging enabled, starting service.')
     end
 
     # Logs a message if logging is enabled.
@@ -222,6 +228,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     # There's a new scan with possibly new vulnerabilities.
     def delta_site_new_scan(ticket_repository, nexpose_item, options, helper, file_site_histories, tag_id=nil)
       log_message("New scan detected for nexpose id: #{nexpose_item}. Generating report.")
+      item = options[:tag_run] ? 'asset' : 'site'
       
       if options[:ticket_mode] == 'I' || options[:ticket_mode] == 'V'
         # I-mode and V-mode tickets require updating the tickets in the target system.
@@ -270,16 +277,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                                                                tag_run: options[:tag_run],
                                                                tag: tag_id)
 
-        preparse = CSV.new(new_scan_vuln_file.path, headers: :first_row)
+        preparse = CSV.open(new_scan_vuln_file.path, headers: :first_row)
         empty_report = preparse.shift.nil?
-        log_message("No new vulnerabilities found in new scan for site: #{nexpose_item}.") if empty_report
-        log_message("New vulnerabilities found in new scan for site #{nexpose_item}, preparing tickets.") unless empty_report
+        preparse.close
+
+        
+        log_message("No new vulnerabilities found in new scan for #{item}: #{nexpose_item}.") if empty_report
+        log_message("New vulnerabilities found in new scan for #{item} #{nexpose_item}, preparing tickets.") unless empty_report
         unless empty_report
           ticket_rate_limiter(options, new_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_create_tickets(ticket_batch, tag_id.nil? ? nexpose_item : "T#{tag_id}")}, Proc.new {|tickets| helper.create_tickets(tickets)})
         end
         
         if helper.respond_to?('prepare_close_tickets') && helper.respond_to?('close_tickets')
           old_scan_vuln_file = ticket_repository.old_vulns(scan_id: file_site_histories[nexpose_item],
+                                                                 nexpose_item: nexpose_item,
                                                                  site_id: nexpose_item,
                                                                  severity: options[:severity],
                                                                  riskScore: options[:riskScore],
@@ -287,10 +298,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                                                                  tag_run: options[:tag_run],
                                                                  tag: tag_id)
 
-          preparse = CSV.new(old_scan_vuln_file.path, headers: :first_row, :skip_blanks => true)
+          preparse = CSV.open(old_scan_vuln_file.path, headers: :first_row, :skip_blanks => true)
           empty_report = preparse.shift.nil?
-          log_message("No old (closed) vulnerabilities found in new scan for site: #{nexpose_item}.") if empty_report
-          log_message("Old vulnerabilities found in new scan for site #{nexpose_item}, preparing closures.") unless empty_report
+          preparse.close
+          log_message("No old (closed) vulnerabilities found in new scan for #{item}: #{nexpose_item}.") if empty_report
+          log_message("Old vulnerabilities found in new scan for #{item} #{nexpose_item}, preparing closures.") unless empty_report
           unless empty_report
             ticket_rate_limiter(options, old_scan_vuln_file, Proc.new {|ticket_batch| helper.prepare_close_tickets(ticket_batch, tag_id.nil? ? nexpose_item : "T#{tag_id}")}, Proc.new {|tickets| helper.close_tickets(tickets)})
           end
@@ -366,7 +378,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       # Prep the batch of tickets
       log_message('Creating tickets.')
       tickets = ticket_prepare_method.call(ticket_batch.join(''))
-      log_message("Generated tickets: #{ticket_batch.size}")
+      log_message("Parsed rows: #{ticket_batch.size}")
       # Sent them off
       log_message('Sending tickets.')
       ticket_send_method.call(tickets)

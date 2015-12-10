@@ -64,8 +64,13 @@ module NexposeTicketing
     #    |url| |summary| |fix|
     #
     def self.all_new_vulns(options = {})
-	"SELECT DISTINCT on (da.ip_address, davs.solution_id) subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id,
-       ds.url,proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, fa.riskscore, dv.cvss_score, dvr.source, dvr.reference,
+      "SELECT DISTINCT on (da.ip_address, subs.vulnerability_id) subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id, 
+       string_agg(DISTINCT 'Summary: ' || coalesce(ds.summary, 'None') ||
+                           '|Nexpose ID: ' || ds.nexpose_id ||
+                           '|Fix: ' || coalesce(proofAsText(ds.fix), 'None') ||
+                           '|URL: ' || coalesce(ds.url, 'None'), '~') as solutions,
+       fa.riskscore, dv.cvss_score,
+       string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references,
         fasva.first_discovered, fasva.most_recently_discovered
         FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
           FROM fact_asset_scan_vulnerability_finding fasv
@@ -77,15 +82,17 @@ module NexposeTicketing
               GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan, fasv.scan_id
               HAVING NOT baselineComparison(fasv.scan_id, current_scan) = 'Old'
           ) subs
-        JOIN dim_vulnerability dv USING (vulnerability_id)
-        JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
-        JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
-        JOIN fact_asset_vulnerability_age fasva ON subs.vulnerability_id = fasva.vulnerability_id AND subs.asset_id = fasva.asset_id
-        JOIN dim_solution ds USING (solution_id)
-        JOIN dim_asset da ON subs.asset_id = da.asset_id
-        JOIN fact_asset fa ON fa.asset_id = da.asset_id
-	      #{createRiskString( options[:riskScore])}
-        ORDER BY da.ip_address, davs.solution_id"
+          JOIN dim_vulnerability dv USING (vulnerability_id)
+          LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
+          JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
+          JOIN fact_asset_vulnerability_age fasva ON subs.vulnerability_id = fasva.vulnerability_id AND subs.asset_id = fasva.asset_id
+          JOIN dim_solution ds USING (solution_id)
+          JOIN dim_asset da ON subs.asset_id = da.asset_id
+          JOIN fact_asset fa ON fa.asset_id = da.asset_id
+          #{createRiskString( options[:riskScore])}
+          GROUP BY subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id, 
+                 fa.riskscore, dv.cvss_score, fasva.first_discovered, fasva.most_recently_discovered
+          ORDER BY da.ip_address, subs.vulnerability_id"
     end
 
     # Gets all delta vulns for all sites sorted by vuln ID.
@@ -95,25 +102,38 @@ module NexposeTicketing
     #    |url| |summary| |fix|
     #
     def self.all_new_vulns_by_vuln_id(options = {})
-      "SELECT DISTINCT on (subs.vulnerability_id, subs.asset_id, davs.solution_id) subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, dv.title, davs.solution_id, ds.nexpose_id,
-       ds.url,proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, fa.riskscore
-        FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
-          FROM fact_asset_scan_vulnerability_finding fasv
-          JOIN
-          (
-            SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-              FROM dim_asset #{createAssetString(options)}) s
-              ON s.asset_id = fasv.asset_id AND (fasv.scan_id = s.baseline_scan OR fasv.scan_id = s.current_scan)
-              GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan, fasv.scan_id
-              HAVING NOT baselineComparison(fasv.scan_id, current_scan) = 'Old'
-          ) subs
-        JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
-        JOIN dim_solution ds USING (solution_id)
-        JOIN dim_asset da ON subs.asset_id = da.asset_id
-        JOIN dim_vulnerability dv ON subs.vulnerability_id = dv.vulnerability_id
-        JOIN fact_asset fa ON fa.asset_id = da.asset_id
-	      #{createRiskString(options[:riskScore])}
-        ORDER BY subs.vulnerability_id, subs.asset_id, davs.solution_id"
+        "SELECT DISTINCT on (subs.vulnerability_id) subs.vulnerability_id, dv.title, MAX(dv.cvss_score) as cvss_score,
+                   string_agg(DISTINCT subs.asset_id ||
+                     '|' || da.ip_address ||
+                     '|' || coalesce(da.host_name, '')  ||
+                     '|' || fa.riskscore, '~') as assets,
+                 
+                   string_agg(DISTINCT 'Summary: ' || coalesce(ds.summary, 'None') ||
+                     '|Nexpose ID: ' || ds.nexpose_id ||
+                     '|Fix: ' || coalesce(proofAsText(ds.fix)) ||
+                     '|URL: ' || coalesce(ds.url, 'None'), '~') as solutions,
+         string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references
+          FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
+            FROM fact_asset_scan_vulnerability_finding fasv
+            JOIN
+            (
+              SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
+                FROM dim_asset #{createAssetString(options)}) s
+                ON s.asset_id = fasv.asset_id AND (fasv.scan_id = s.baseline_scan OR fasv.scan_id = s.current_scan)
+                GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan, fasv.scan_id
+                HAVING NOT baselineComparison(fasv.scan_id, current_scan) = 'Old'
+            ) subs
+          JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
+          LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
+          JOIN dim_solution ds USING (solution_id)
+          JOIN dim_asset da ON subs.asset_id = da.asset_id
+          JOIN dim_vulnerability dv ON subs.vulnerability_id = dv.vulnerability_id
+          JOIN fact_asset fa ON fa.asset_id = da.asset_id
+          JOIN fact_asset_vulnerability_age fasva ON subs.vulnerability_id = fasva.vulnerability_id AND subs.asset_id = fasva.asset_id
+          #{createRiskString(options[:riskScore])}
+          
+          GROUP BY subs.vulnerability_id, dv.title
+          ORDER BY subs.vulnerability_id"
     end
     
     # Gets all new vulnerabilities happening after a reported scan id.
@@ -126,25 +146,36 @@ module NexposeTicketing
     #     |url| |summary| |fix|
     #
     def self.new_vulns_since_scan(options = {})
-      "SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id,
-       ds.url, proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, fa.riskscore
+      "SELECT DISTINCT on (da.ip_address, subs.vulnerability_id) subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id, 
+       string_agg(DISTINCT 'Summary: ' || coalesce(ds.summary, 'None') ||
+                           '|Nexpose ID: ' || ds.nexpose_id ||
+                           '|Fix: ' || coalesce(proofAsText(ds.fix), 'None') ||
+                           '|URL: ' || coalesce(ds.url, 'None'), '~') as solutions,
+       fa.riskscore, dv.cvss_score,
+       string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references,
+       fasva.first_discovered, fasva.most_recently_discovered
         FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN
           (
             SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
               FROM dim_asset #{createAssetString(options)}) s
-              ON s.asset_id = fasv.asset_id AND (fasv.scan_id >= #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
+              ON s.asset_id = fasv.asset_id AND (fasv.scan_id >=  #{options[:scan_id]} OR fasv.scan_id = s.current_scan)
               GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
               HAVING baselineComparison(fasv.scan_id, current_scan) = 'New'
           ) subs
+      JOIN dim_vulnerability dv USING (vulnerability_id)
+      LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
       JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
+      JOIN fact_asset_vulnerability_age fasva ON subs.vulnerability_id = fasva.vulnerability_id AND subs.asset_id = fasva.asset_id
       JOIN dim_solution ds USING (solution_id)
       JOIN dim_asset da ON subs.asset_id = da.asset_id
       AND subs.current_scan > #{options[:scan_id]}
       JOIN fact_asset fa ON fa.asset_id = da.asset_id
       #{createRiskString(options[:riskScore])}
-      ORDER BY da.ip_address"
+      GROUP BY subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id, 
+                 fa.riskscore, dv.cvss_score, fasva.first_discovered, fasva.most_recently_discovered
+      ORDER BY da.ip_address, subs.vulnerability_id"
     end
 
 
@@ -158,8 +189,17 @@ module NexposeTicketing
     #     |url| |summary| |fix|
     #
     def self.new_vulns_by_vuln_id_since_scan(options = {})
-      "SELECT DISTINCT on (subs.vulnerability_id, subs.asset_id, davs.solution_id) subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id,
-       ds.url, proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, fa.riskscore
+      "SELECT DISTINCT on (subs.vulnerability_id) subs.vulnerability_id, dv.title, MAX(dv.cvss_score) as cvss_score,
+                   string_agg(DISTINCT subs.asset_id ||
+                     '|' || da.ip_address ||
+                     '|' || coalesce(da.host_name, '')  ||
+                     '|' || fa.riskscore, '~') as assets,
+                 
+                   string_agg(DISTINCT 'Summary: ' || coalesce(ds.summary, 'None') ||
+                     '|Nexpose ID: ' || ds.nexpose_id ||
+                     '|Fix: ' || coalesce(proofAsText(ds.fix)) ||
+                     '|URL: ' || coalesce(ds.url, 'None'), '~') as solutions,
+         string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references
         FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
           FROM fact_asset_scan_vulnerability_finding fasv
           JOIN
@@ -170,13 +210,17 @@ module NexposeTicketing
               GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
               HAVING baselineComparison(fasv.scan_id, current_scan) = 'New'
           ) subs
+      JOIN dim_vulnerability dv USING (vulnerability_id)
+      LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
       JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
+      JOIN fact_asset_vulnerability_age fasva ON subs.vulnerability_id = fasva.vulnerability_id AND subs.asset_id = fasva.asset_id
       JOIN dim_solution ds USING (solution_id)
       JOIN dim_asset da ON subs.asset_id = da.asset_id
       AND subs.current_scan > #{options[:scan_id]}
       JOIN fact_asset fa ON fa.asset_id = da.asset_id
       #{createRiskString(options[:riskScore])}
-      ORDER BY subs.vulnerability_id, subs.asset_id, davs.solution_id"
+      GROUP BY subs.vulnerability_id, dv.title
+      ORDER BY vulnerability_id"
     end
 
 
@@ -190,7 +234,7 @@ module NexposeTicketing
     #     |url| |summary| |fix|
     #
     def self.old_vulns_since_scan(options = {})
-      "SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, dvs.solution_id, ds.nexpose_id, ds.url, 
+      "SELECT DISTINCT on (da.ip_address, subs.vulnerability_id) subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id, dvs.solution_id, ds.nexpose_id, ds.url, 
         proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, subs.comparison, fa.riskscore
         FROM (
           SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan, baselineComparison(fasv.scan_id, s.current_scan) as comparison 
@@ -223,8 +267,14 @@ module NexposeTicketing
     #     |url| |summary| |fix| |comparison|
     #
     def self.all_vulns_since_scan(options = {})
-      "SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, dvs.solution_id, ds.nexpose_id, ds.url, 
-        proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, subs.comparison, fa.riskscore
+      "SELECT DISTINCT on (da.ip_address, subs.vulnerability_id) subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id, 
+        string_agg(DISTINCT 'Summary: ' || coalesce(ds.summary, 'None') ||
+                           '|Nexpose ID: ' || ds.nexpose_id ||
+                           '|Fix: ' || coalesce(proofAsText(ds.fix), 'None') ||
+                           '|URL: ' || coalesce(ds.url, 'None'), '~') as solutions, 
+        subs.comparison, fa.riskscore, dv.cvss_score, 
+        string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references,
+        null as first_discovered, null as most_recently_discovered
         FROM (
           SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan, baselineComparison(fasv.scan_id, s.current_scan) as comparison
           FROM fact_asset_scan_vulnerability_finding fasv
@@ -235,17 +285,27 @@ module NexposeTicketing
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) = 'Old'
         ) subs
+        JOIN dim_vulnerability dv USING (vulnerability_id)
+        LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
         JOIN dim_vulnerability_solution dvs USING (vulnerability_id)
         JOIN dim_solution ds USING (solution_id)
         JOIN dim_asset da ON subs.asset_id = da.asset_id
-      	JOIN fact_asset fa ON fa.asset_id = subs.asset_id
-      	 #{createRiskString(options[:riskScore])}
+        JOIN fact_asset fa ON fa.asset_id = subs.asset_id
+         #{createRiskString(options[:riskScore])}
         AND subs.current_scan > #{options[:scan_id]}
+        GROUP BY subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id, 
+                 fa.riskscore, dv.cvss_score, subs.comparison
 
         UNION
 
-        SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, davs.solution_id, ds.nexpose_id, ds.url, 
-        proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, subs.comparison, fa.riskscore
+        SELECT DISTINCT on (da.ip_address, subs.vulnerability_id) subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id,
+        string_agg(DISTINCT 'Summary: ' || coalesce(ds.summary, 'None') ||
+                           '|Nexpose ID: ' || ds.nexpose_id ||
+                           '|Fix: ' || coalesce(proofAsText(ds.fix), 'None') ||
+                           '|URL: ' || coalesce(ds.url, 'None'), '~') as solutions, 
+        subs.comparison, fa.riskscore, dv.cvss_score, 
+        string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references,
+        fasva.first_discovered, fasva.most_recently_discovered
         FROM 
         (
           SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan, baselineComparison(fasv.scan_id, s.current_scan) as comparison
@@ -258,18 +318,23 @@ module NexposeTicketing
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) IN ('Same','New')
         ) subs
+        JOIN dim_vulnerability dv USING (vulnerability_id)
+        LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
         JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
+        JOIN fact_asset_vulnerability_age fasva ON subs.vulnerability_id = fasva.vulnerability_id AND subs.asset_id = fasva.asset_id
         JOIN dim_solution ds USING (solution_id)
         JOIN dim_asset da ON subs.asset_id = da.asset_id
         JOIN fact_asset fa ON fa.asset_id = subs.asset_id
-      	#{createRiskString(options[:riskScore])}
+        #{createRiskString(options[:riskScore])}
         AND subs.current_scan > #{options[:scan_id]}
+        GROUP BY subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id, 
+                 fa.riskscore, dv.cvss_score, fasva.first_discovered, fasva.most_recently_discovered, subs.comparison
 
         ORDER BY ip_address, comparison"
     end
 
     # Gets all vulnerabilities happening after a reported scan id. Sorted by vuln ID. This result set also includes the
-    # baseline comparision ("Old", "New", or "Same") allowing for IP-based ticket updating.
+    # baseline comparision ("Old", "New", or "Same") allowing for vulnerability-based ticket updating.
     #
     # * *Args*    :
     #   - +reported_scan+ -  Last reported scan id.
@@ -279,8 +344,18 @@ module NexposeTicketing
     #     |url| |summary| |fix| |comparison|
     #
     def self.all_vulns_by_vuln_id_since_scan(options = {})
-      "SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, dv.title, dvs.solution_id, ds.nexpose_id, ds.url,
-        proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, subs.comparison, fa.riskscore
+      "SELECT DISTINCT on (subs.vulnerability_id, subs.comparison) subs.vulnerability_id, dv.title, MAX(dv.cvss_score) as cvss_score,
+                   string_agg(DISTINCT subs.asset_id ||
+                     '|' || da.ip_address ||
+                     '|' || coalesce(da.host_name, '')  ||
+                     '|' || fa.riskscore, '~') as assets,
+                 
+                   string_agg(DISTINCT 'Summary: ' || coalesce(ds.summary, 'None') ||
+                     '|Nexpose ID: ' || ds.nexpose_id ||
+                     '|Fix: ' || coalesce(proofAsText(ds.fix)) ||
+                     '|URL: ' || coalesce(ds.url, 'None'), '~') as solutions,
+                   string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references,
+                   subs.comparison
         FROM (
           SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan, baselineComparison(fasv.scan_id, s.current_scan) as comparison
           FROM fact_asset_scan_vulnerability_finding fasv
@@ -291,19 +366,31 @@ module NexposeTicketing
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) = 'Old'
         ) subs
+        JOIN dim_vulnerability dv USING (vulnerability_id)
+        LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
         JOIN dim_vulnerability_solution dvs USING (vulnerability_id)
         JOIN dim_solution ds USING (solution_id)
         JOIN dim_asset da ON subs.asset_id = da.asset_id
-        JOIN dim_vulnerability dv ON subs.vulnerability_id = dv.vulnerability_id
-      	JOIN fact_asset fa ON fa.asset_id = subs.asset_id
-      	#{createRiskString(options[:riskScore])}
+        JOIN fact_asset fa ON fa.asset_id = subs.asset_id
+         #{createRiskString(options[:riskScore])}
         AND subs.current_scan > #{options[:scan_id]}
+        GROUP BY subs.vulnerability_id, dv.title, subs.comparison
 
         UNION
 
-        SELECT subs.asset_id, da.ip_address, subs.current_scan, subs.vulnerability_id, dv.title, davs.solution_id, ds.nexpose_id, ds.url,
-        proofAsText(ds.summary) as summary, proofAsText(ds.fix) as fix, subs.comparison, fa.riskscore
-        FROM
+        SELECT DISTINCT on (subs.vulnerability_id, subs.comparison) subs.vulnerability_id, dv.title, MAX(dv.cvss_score) as cvss_score,
+                   string_agg(DISTINCT subs.asset_id ||
+                     '|' || da.ip_address ||
+                     '|' || coalesce(da.host_name, '')  ||
+                     '|' || fa.riskscore, '~') as assets,
+                 
+                   string_agg(DISTINCT 'Summary: ' || coalesce(ds.summary, 'None') ||
+                     '|Nexpose ID: ' || ds.nexpose_id ||
+                     '|Fix: ' || coalesce(proofAsText(ds.fix)) ||
+                     '|URL: ' || coalesce(ds.url, 'None'), '~') as solutions,
+                   string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references,
+                   subs.comparison
+        FROM 
         (
           SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan, baselineComparison(fasv.scan_id, s.current_scan) as comparison
           FROM fact_asset_scan_vulnerability_finding fasv
@@ -315,15 +402,17 @@ module NexposeTicketing
           GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan
           HAVING baselineComparison(fasv.scan_id, current_scan) IN ('Same','New')
         ) subs
+        JOIN dim_vulnerability dv USING (vulnerability_id)
+        LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
         JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
         JOIN dim_solution ds USING (solution_id)
         JOIN dim_asset da ON subs.asset_id = da.asset_id
-        JOIN dim_vulnerability dv ON subs.vulnerability_id = dv.vulnerability_id
-      	JOIN fact_asset fa ON fa.asset_id = subs.asset_id
-      	#{createRiskString(options[:riskScore])}
+        JOIN fact_asset fa ON fa.asset_id = subs.asset_id
+        #{createRiskString(options[:riskScore])}
         AND subs.current_scan > #{options[:scan_id]}
+        GROUP BY subs.vulnerability_id, dv.title, subs.comparison
 
-        ORDER BY vulnerability_id, comparison, asset_id, solution_id"
+        ORDER BY vulnerability_id, comparison"
     end
 
 
@@ -336,7 +425,7 @@ module NexposeTicketing
     #   - Returns |asset_id| |ip_address| |current_scan| |vulnerability_id| |comparison|
     #
     def self.old_tickets_by_ip(options = {})
-      "SELECT subs.asset_id, subs.ip_address, subs.current_scan, subs.vulnerability_id, subs.comparison
+      "SELECT DISTINCT on(subs.ip_address) subs.asset_id, subs.ip_address, subs.current_scan, subs.vulnerability_id, subs.comparison
         FROM (
           SELECT fasv.asset_id,  s.ip_address, fasv.vulnerability_id, s.current_scan, baselineComparison(fasv.scan_id, s.current_scan) as comparison
           FROM fact_asset_scan_vulnerability_finding fasv

@@ -5,6 +5,8 @@ module NexposeTicketing
     require 'nexpose'
     require 'nexpose_ticketing/queries'
     require 'nexpose_ticketing/report_helper'
+    require 'nexpose_ticketing/nx_logger'
+    require 'nexpose_ticketing/version'
 
     @timeout = 10800
 
@@ -13,8 +15,12 @@ module NexposeTicketing
     end
 
     def nexpose_login(nexpose_data)
+      
       @nsc = Nexpose::Connection.new(nexpose_data[:nxconsole], nexpose_data[:nxuser], nexpose_data[:nxpasswd])
       @nsc.login
+      @log = NexposeTicketing::NxLogger.instance
+      @log.on_connect(nexpose_data[:nxconsole], 3780, @nsc.session_id, "{}")
+
       #After login, create the report helper
       @report_helper = NexposeReportHelper::ReportOps.new(@nsc, @timeout)
     end

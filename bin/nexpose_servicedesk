@@ -1,6 +1,12 @@
 #!/usr/bin/env ruby
 require 'yaml'
 require 'nexpose_ticketing'
+require 'nexpose_ticketing/nx_logger'
+require 'nexpose_ticketing/version'
+
+log = NexposeTicketing::NxLogger.instance
+log.setup_statistics_collection('ManageEngine', 'ServiceDesk', NexposeTicketing::VERSION)
+log.setup_logging(true, 'info')
 
 # Path to ServiceNow configuration file
 SERVICEDESK_CONFIG_PATH = File.join(File.dirname(__FILE__),

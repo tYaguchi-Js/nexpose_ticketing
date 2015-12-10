@@ -1,6 +1,13 @@
 #!/usr/bin/env ruby
 require 'yaml'
 require 'nexpose_ticketing'
+require 'nexpose_ticketing/nx_logger'
+require 'nexpose_ticketing/version'
+
+log = NexposeTicketing::NxLogger.instance
+log.setup_statistics_collection('Atlassian', 'JIRA', NexposeTicketing::VERSION)
+log.setup_logging(true, 'info')
+
 # Path to the JIRA Configuration file.
 JIRA_CONFIG_PATH = File.join(File.dirname(__FILE__),
                              '../lib/nexpose_ticketing/config/jira.config')
