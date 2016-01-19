@@ -35,7 +35,7 @@ module NexposeTicketing
       end
     end
 
-    def setup_logging(enabled, log_level = nil)
+    def setup_logging(enabled, log_level = 'info')
       unless enabled || @log.nil?
         log_message('Logging disabled.')
         return
@@ -50,7 +50,7 @@ module NexposeTicketing
       io.autoclose = false
       io.sync = true
       @log = Logger.new(io, 'weekly')
-      @log.level = if log_level.casecmp('info') == 0 
+      @log.level = if log_level.to_s.casecmp('info') == 0 
                      Logger::INFO 
                    else
                      Logger::DEBUG
@@ -144,6 +144,11 @@ module NexposeTicketing
       rescue => e
         #Let the program continue
       end
+    end
+
+    #Used by net library for debugging 
+    def <<(value)
+      log_debug_message(value)
     end
 
   end

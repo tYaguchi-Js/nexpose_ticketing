@@ -22,6 +22,8 @@ module NexposeReportHelper
       report_details = @nsc.last_report(report_id)
       file = Tempfile.new("#{report_id}")
       file.write(@nsc.download(report_details.uri))
+      file.flush
+
       #Got the report, cleanup server-side
       @nsc.delete_report_config(report_id)
       file

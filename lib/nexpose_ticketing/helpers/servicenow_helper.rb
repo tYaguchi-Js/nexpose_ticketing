@@ -6,6 +6,7 @@ require 'csv'
 require 'nexpose_ticketing/nx_logger'
 require 'nexpose_ticketing/version'
 require 'nexpose_ticketing/common_helper'
+require 'securerandom'
 
 # Serves as the ServiceNow interface for creating/updating issues from 
 # vulnelrabilities found in Nexpose.
@@ -62,6 +63,56 @@ class ServiceNowHelper
         send_ticket(ticket, @servicenow_data[:servicenow_url], @servicenow_data[:redirect_limit])
       end
     end
+  end
+
+  # Retrieves the unique ticket identifier for a particular NXID if one exists.
+  #
+  # * *Args*    :
+  #   - +nxid+ - NXID of the ticket to be updated.
+  #
+  def get_ticket_identifier(nxid)
+    headers = { 'Content-Type' => 'application/json',
+                'Accept' => 'application/json' }
+ 
+    #Get the address
+    query = "incident.do?JSONv2&sysparm_query=active=true^u_nxid=#{nxid}"
+    uri = URI.join(@servicenow_data[:servicenow_url], '/')
+    full_url = URI.join(uri, "/").to_s + query
+    req = Net::HTTP::Get.new(full_url, headers)
+    req.basic_auth @servicenow_data[:username], @servicenow_data[:password]
+    resp = Net::HTTP.new(uri.host, uri.port)
+
+    # Enable this line for debugging the https call.
+    # resp.set_debug_output(@log)
+
+    if uri.scheme == 'https'
+      resp.use_ssl = true 
+      resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    end
+    
+    begin
+      response = resp.request(req)
+    rescue Exception => e
+      @log.log_error_message("Request failed for NXID #{nxid}.\n#{e}")
+    end
+
+    tickets = JSON.parse(response.body)
+    records = tickets['records']
+    if records.count > 1
+      @log.log_error_message("Found more than one result for NXID #{nxid}. Updating first result.")
+      records.each { |r| @log.log_error_message("NXID #{nxid} found with Rapid7 Identifier #{r['u_rpd_id']}") }
+    elsif records.count == 0
+      @log.log_error_message("No results found for NXID #{nxid}.")
+      return nil
+    end
+
+    ticket_id = records.first['u_rpd_id']
+    @log.log_message("Found ticket for NXID #{nxid} ID is: #{ticket_id}")
+    if ticket_id.nil?
+      @log.log_error_message("ID is nil for ticket with NXID #{nxid}.")
+    end
+
+    ticket_id
   end
 
   # Post an individual JSON-formatted ticket to ServiceNow. If the response from the post is a 301/
@@ -142,52 +193,60 @@ class ServiceNowHelper
     tickets = []
     previous_row = nil
     description = nil
-    action = 'insert'
+    action = 'insert' 
+    
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
       if previous_row.nil?
         previous_row = row.dup
         nxid = @common_helper.generate_nxid(nexpose_identifier_id, row)
+
         action = unless row['comparison'].nil? || row['comparison'] == 'New'
                    'update'
                  else
                    'insert'
                  end
+
         @ticket = {
           'sysparm_action' => action,
-          'u_caller_id' => "#{@servicenow_data[:username]}",
-          'u_category' => 'Software',
-          'u_impact' => '1',
-          'u_urgency' => '1',
-          'u_short_description' => @common_helper.get_title(row),
-          'sysparm_query' => "active=true^u_work_notesCONTAINSNXID: #{nxid}",
-          'u_work_notes' => ""
+          'caller_id' => "#{@servicenow_data[:username]}",
+          'category' => 'Software',
+          'impact' => '1',
+          'urgency' => '1',
+          'short_description' => @common_helper.get_title(row),
+          'work_notes' => "",
+          'u_nxid' => nxid,
+          'u_rpd_id' => nil
         }
         description = @common_helper.get_description(nexpose_identifier_id, row)
       elsif matching_fields.any? { |x|  previous_row[x].nil? || previous_row[x] != row[x] }
         info = @common_helper.get_field_info(matching_fields, previous_row)
         @log.log_message("Generated ticket with #{info}")
 
-        @ticket['u_work_notes'] = @common_helper.print_description(description)
+        @ticket['work_notes'] = @common_helper.print_description(description)
         tickets.push(@ticket)
+        
         previous_row = nil
         description = nil
         redo
       else
-        if !row['comparison'].nil? && row['comparison'] != 'New'
-          action = 'update' 
-        end
+        @ticket['sysparm_action'] = 'update' unless row['comparison'] == 'New'
         description = @common_helper.update_description(description, row)      
       end
     end
 
     unless @ticket.nil? || @ticket.empty?
-      @ticket['u_work_notes'] = @common_helper.print_description(description) unless (@ticket.size == 0)
+      @ticket['work_notes'] = @common_helper.print_description(description) unless (@ticket.size == 0)
       tickets.push(@ticket)
     end
     @log.log_message("Generated <#{tickets.count.to_s}> tickets.")
 
     tickets.map do |t|
-      t.delete('sysparm_query') if t['sysparm_action'] == 'insert'
+      if t['sysparm_action'] == 'update'
+        t['sysparm_action'] = 'insert'
+        t['u_rpd_id'] = get_ticket_identifier(t['u_nxid'])
+      end
+
+      t['u_rpd_id'] ||= SecureRandom.uuid
       t.to_json
     end
   end
@@ -233,10 +292,11 @@ class ServiceNowHelper
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
       @nxid = @common_helper.generate_nxid(nexpose_identifier_id, row)
       # 'state' 7 is the "Closed" state within ServiceNow.
+      ticket_id = get_ticket_identifier(@nxid)
       @log.log_message("Closing ticket with NXID: #{@nxid}.")
       ticket = {
-          'sysparm_action' => 'update',
-          'sysparm_query' => "active=true^u_work_notesCONTAINSNXID: #{@nxid}",
+          'sysparm_action' => 'insert',
+          'u_rpd_id' => ticket_id,
           'state' => '7'
       }.to_json
       tickets.push(ticket)

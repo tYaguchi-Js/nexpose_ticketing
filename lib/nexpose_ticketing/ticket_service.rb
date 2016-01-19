@@ -315,57 +315,58 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     end
 
 
-    def ticket_rate_limiter(options, query_results_file, ticket_prepare_method, ticket_send_method)
+    def ticket_rate_limiter(options, query_results_file, ticket_prepare_method, ticket_send_method)      
       batch_size_max = (options[:batch_size] + 1)
       log_message("Batching tickets in sizes: #{options[:batch_size]}")
 
-      #Vulnerability mode is batched by vulnerability_id. The rest are batched by ip_address.
-      if @options[:ticket_mode] == 'V'
-        batching_field = 'vulnerability_id'
-      else
-        batching_field = 'ip_address'
-      end
-
+      #Vulnerability mode is batched by vulnerability_id, IP mode is batched by IP address.
+      current_id = -1
+      id_field = if @options[:ticket_mode] == 'V'
+                   'vulnerability_id'
+                 else
+                   'ip_address'
+                 end
+      
       # Start the batching
       query_results_file.rewind
       csv_header = query_results_file.readline
       ticket_batch = []
-      current_batching_value = -1
       current_csv_row = nil
 
       begin
-        IO.foreach(query_results_file) do |line|
-          ticket_batch << line
+        CSV.foreach(query_results_file, headers: csv_header) do |row|
+          ticket_batch << row
 
-          CSV.parse(line.chomp, headers: csv_header)  do |row|
-            if current_batching_value == -1
-              current_batching_value = row[batching_field.to_s]  unless row[batching_field.to_s] == 'current_batching_value'
-            end
-            current_csv_row = row unless row[batching_field.to_s] == 'current_batching_value'
+          #Keep updating the ID until we hit the batch 'limit'
+          #Should this be <=??? What happens if value n-1 is different?
+
+          if ticket_batch.size < batch_size_max
+            current_id = row[id_field]
+            next
           end
 
-          if ticket_batch.size >= batch_size_max
-            #Batch target reached. Make sure we  end with a complete IP address set (all tickets for a single IP in this batch)
-            if(current_batching_value != current_csv_row[batching_field.to_s])
-              log_message('Batch size reached. Sending tickets.')
+          #Keep adding rows to get all information on an asset/vulnerability
+          next if @options[:ticket_mode] != 'D' && row[id_field] == current_id
+          
+          #Last row is mismatch/independent
+          leftover_row = ticket_batch.pop
 
-              #Move the mismatching line to the next batch
-              line_holder = ticket_batch.pop
-              ticket_rate_limiter_processor(ticket_batch, ticket_prepare_method, ticket_send_method)
-              # Cleanup for the next batch
-              ticket_batch.clear
-              ticket_batch << csv_header
-              ticket_batch << line_holder
-              current_batching_value = -1
-            end
-          end
+          log_message('Batch size reached. Sending tickets.')
+          ticket_rate_limiter_processor(ticket_batch, ticket_prepare_method, ticket_send_method)
+          
+          ticket_batch.clear
+          ticket_batch << csv_header
+          ticket_batch << leftover_row
+          current_id = -1
         end
       ensure
         log_message('Finished reading report. Sending any remaining tickets and cleaning up file system.')
+
         ticket_rate_limiter_processor(ticket_batch, ticket_prepare_method, ticket_send_method)
+
         query_results_file.close
         query_results_file.unlink
-      end
+      end 
     end
 
     def ticket_rate_limiter_processor(ticket_batch, ticket_prepare_method, ticket_send_method)
