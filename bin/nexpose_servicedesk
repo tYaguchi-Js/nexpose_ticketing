@@ -12,12 +12,16 @@ log.setup_logging(true, 'info')
 SERVICEDESK_CONFIG_PATH = File.join(File.dirname(__FILE__),
                                    '../lib/nexpose_ticketing/config/servicedesk.config')
 
+current_encoding = Encoding.default_external=Encoding.find("UTF-8")
+
 # Read in ServiceDesk options from servicenow.config
 servicedesk_options = begin
   YAML.load_file(SERVICEDESK_CONFIG_PATH)
 rescue ArgumentError => e
   raise "Could not parse YAML #{SERVICEDESK_CONFIG_PATH} : #{e.message}"
 end
+
+log.log_message("Current Encoding set to: #{current_encoding}")
 
 # Initialize Nexpose Ticket Service using ServiceDesk
 NexposeTicketing.start(servicedesk_options)

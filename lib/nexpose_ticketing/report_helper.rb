@@ -21,6 +21,7 @@ module NexposeReportHelper
       wait_for_report(report_id)
       report_details = @nsc.last_report(report_id)
       file = Tempfile.new("#{report_id}")
+      file.binmode
       file.write(@nsc.download(report_details.uri))
       file.flush
 

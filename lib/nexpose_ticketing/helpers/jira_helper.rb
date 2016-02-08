@@ -37,15 +37,7 @@ class JiraHelper
     uri = URI.parse(("#{@jira_data[:jira_url]}".split("/")[0..-2].join('/') + '/search'))
     uri.query = [uri.query, URI.escape(jql_query)].compact.join('&')
     req = Net::HTTP::Get.new(uri.to_s, headers)
-    req.basic_auth @jira_data[:username], @jira_data[:password]
-    resp = Net::HTTP.new(uri.host, uri.port)
-
-    # Enable this line for debugging the https call.
-    # resp.set_debug_output(@log)
-
-    resp.use_ssl = true if uri.scheme == 'https'
-    resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    response = resp.request(req)
+    response = send_jira_request(uri, req)
 
     issues = JSON.parse(response.body)['issues']
    if issues.nil? || !issues.any? || issues.size > 1
@@ -54,7 +46,62 @@ class JiraHelper
      @log.log_message("Jira returned no key or too many keys for query result! Response was <#{issues}>")
      return nil
    end
-    return issues[0]['key']
+   return issues[0]['key']
+  end
+
+  # Sends a HTTP request to the JIRA console. 
+  #
+  # * *Args*    :
+  #   - +uri+ - Address of the JIRA endpoint.
+  #   - +request+ - Request containing the query or ticket object. 
+  #
+  # * *Returns* :
+  #   - HTTPResponse containing result from the JIRA console.
+  #
+  def send_request(uri, request, ticket=false)
+    request.basic_auth @jira_data[:username], @jira_data[:password]
+    resp = Net::HTTP.new(uri.host, uri.port)
+
+    # Enable this line for debugging the https call.
+    # resp.set_debug_output(@log)
+
+    resp.use_ssl = uri.scheme == 'https'
+    resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+    return resp.request(request) unless ticket
+
+    resp.start do |http|
+      res = http.request(request)
+      next if res.code.to_i.between?(200,299)
+      @log.log_error_message("Error submitting ticket data: #{res.message}, #{res.body}")
+      res
+    end
+  end
+
+  # Sends a request to the JIRA console. 
+  #
+  # * *Args*    :
+  #   - +uri+ - Address of the JIRA endpoint.
+  #   - +request+ - Request containing the query. 
+  #
+  # * *Returns* :
+  #   - HTTPResponse containing result from the JIRA console.
+  #
+  def send_jira_request(uri, request)
+    send_request(uri, request)
+  end
+
+  # Sends a ticket object to the JIRA console. 
+  #
+  # * *Args*    :
+  #   - +uri+ - Address of the JIRA endpoint.
+  #   - +request+ - Request containing the ticket object. 
+  #
+  # * *Returns* :
+  #   - HTTPResponse containing result from the JIRA console.
+  #
+  def send_ticket(uri, request)
+    send_request(uri, request, true)
   end
 
   # Fetches the Jira ticket transition details for the given Jira ticket key. Tries to match the response to the
@@ -75,16 +122,7 @@ class JiraHelper
 
     uri = URI.parse(("#{@jira_data[:jira_url]}#{jira_key}/transitions?expand=transitions.fields."))
     req = Net::HTTP::Get.new(uri.to_s, headers)
-    req.basic_auth @jira_data[:username], @jira_data[:password]
-    resp = Net::HTTP.new(uri.host, uri.port)
-
-    # Enable this line for debugging the https call.
-    # resp.set_debug_output(@log)
-
-    resp.use_ssl = true if uri.scheme == 'https'
-    resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
-
-    response = resp.request(req)
+    response = send_jira_request(uri, req)
 
     transitions = JSON.parse(response.body)
 
@@ -108,16 +146,8 @@ class JiraHelper
 
       uri = URI.parse("#{@jira_data[:jira_url]}")
       req = Net::HTTP::Post.new(@jira_data[:jira_url], headers)
-      req.basic_auth @jira_data[:username], @jira_data[:password]
       req.body = ticket
-      resp = Net::HTTP.new(uri.host, uri.port)
-
-      # Enable this line for debugging the https call.
-      #resp.set_debug_output(@log)
-
-      resp.use_ssl = true if uri.scheme == 'https'
-      resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      resp.start { |http| http.request(req) }
+      send_ticket(uri, req)
     end
   end
 
@@ -196,10 +226,9 @@ class JiraHelper
       headers = { 'Content-Type' => 'application/json',
                   'Accept' => 'application/json' }
 
-      tickets.each { |ticket|
+      tickets.each do |ticket|
         uri = URI.parse(("#{@jira_data[:jira_url]}#{ticket}/transitions"))
         req = Net::HTTP::Post.new(uri.to_s, headers)
-        req.basic_auth @jira_data[:username], @jira_data[:password]
 
         transition = get_jira_transition_details(ticket, @jira_data[:close_step_id])
         if transition.nil?
@@ -227,15 +256,8 @@ class JiraHelper
         end
 
         req.body = "{\"transition\" : {\"id\" : #{transition['id']}}, \"fields\" : { #{required_fields.join(",")}}}"
-        resp = Net::HTTP.new(uri.host, uri.port)
-
-        # Enable this line for debugging the https call.
-        #resp.set_debug_output(@log)
-
-        resp.use_ssl = true if uri.scheme == 'https'
-        resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        resp.start { |http| http.request(req) }
-      }
+        send_ticket(uri, req)
+      end
     end
   end
 
@@ -287,19 +309,11 @@ class JiraHelper
 
         send_whole_ticket ? req = Net::HTTP::Post.new(uri.to_s, headers) : req = Net::HTTP::Put.new(uri.to_s, headers)
 
-        req.basic_auth @jira_data[:username], @jira_data[:password]
         send_whole_ticket ?
             req.body = ticket_details.last :
             req.body = {'update' => {'description' => [{'set' => "#{JSON.parse(ticket_details[1])['fields']['description']}"}]}}.to_json
 
-        resp = Net::HTTP.new(uri.host, uri.port)
-
-        # Enable this line for debugging the https call.
-        #resp.set_debug_output(@log)
-
-        resp.use_ssl = true if uri.scheme == 'https'
-        resp.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        resp.start { |http| http.request(req) }
+        send_ticket(uri, req)
       end
     end
   end

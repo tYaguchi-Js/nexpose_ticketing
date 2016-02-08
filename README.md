@@ -72,8 +72,21 @@ We welcome contributions to this package. We ask only that pull requests and pat
 
 ##Changelog
 
+###1.0.2
+08-02-2016
+- Encoding is now enforced as UTF-8 when parsing CSV files - fixes environment-specific errors.
+
+Jira Helper:
+- Non-200 return codes are now logged when creating or updating tickets.
+
+NX Logger:
+- Fixed Windows-specific, input-related errors.
+
+ServiceNow:
+- No longer queries for existing incident if ticket is new.
+
 ###1.0.1
-19-01-2015
+19-01-2016
 
 ServiceNow Helper:
 - New update set.

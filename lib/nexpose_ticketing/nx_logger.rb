@@ -46,7 +46,7 @@ module NexposeTicketing
       require 'logger'
       directory = File.dirname(@logger_file)
       FileUtils.mkdir_p(directory) unless File.directory?(directory)
-      io = IO.for_fd(IO.sysopen(@logger_file, 'a'))
+      io = IO.for_fd(IO.sysopen(@logger_file, 'a'), 'a')
       io.autoclose = false
       io.sync = true
       @log = Logger.new(io, 'weekly')

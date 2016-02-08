@@ -188,7 +188,7 @@ class ServiceNowHelper
   #
   def prepare_tickets(vulnerability_list, nexpose_identifier_id, matching_fields)
     @ticket = Hash.new(-1)
-    
+
     @log.log_message("Preparing tickets in #{options[:ticket_mode]} address.")
     tickets = []
     previous_row = nil
@@ -200,10 +200,10 @@ class ServiceNowHelper
         previous_row = row.dup
         nxid = @common_helper.generate_nxid(nexpose_identifier_id, row)
 
-        action = unless row['comparison'].nil? || row['comparison'] == 'New'
-                   'update'
-                 else
+        action = if row['comparison'].nil? || row['comparison'] == 'New'
                    'insert'
+                 else
+                   'update'
                  end
 
         @ticket = {
@@ -229,7 +229,9 @@ class ServiceNowHelper
         description = nil
         redo
       else
-        @ticket['sysparm_action'] = 'update' unless row['comparison'] == 'New'
+        unless row['comparison'].nil? || row['comparison'] == 'New'
+          @ticket['sysparm_action'] = 'update'
+        end
         description = @common_helper.update_description(description, row)      
       end
     end
