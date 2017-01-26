@@ -6,17 +6,14 @@ require 'csv'
 require 'savon'
 require 'nexpose_ticketing/nx_logger'
 require 'nexpose_ticketing/version'
-require 'nexpose_ticketing/common_helper'
+require_relative './base_helper'
 
 # Serves as the Remedy interface for creating/updating issues from 
 # vulnelrabilities found in Nexpose.
-class RemedyHelper
-  attr_accessor :remedy_data, :options, :log, :client
-  def initialize(remedy_data, options)
-    @remedy_data = remedy_data
-    @options = options
-    @log = NexposeTicketing::NxLogger.instance
-    @common_helper = NexposeTicketing::CommonHelper.new(@options)
+class RemedyHelper < BaseHelper
+  attr_accessor :log, :client
+  def initialize(service_data, options, mode)
+    super(service_data, options, mode)
   end
 
   # Generates a savon-based ticket object.
@@ -26,9 +23,9 @@ class RemedyHelper
   #
   def generate_new_ticket(extra_fields=nil)
     base_ticket = {
-      'First_Name' => "#{@remedy_data[:first_name]}",
+      'First_Name' => "#{@service_data[:first_name]}",
         'Impact' => '1-Extensive/Widespread',
-        'Last_Name' => "#{@remedy_data[:last_name]}",
+        'Last_Name' => "#{@service_data[:last_name]}",
         'Reported_Source' => 'Other',
         'Service_Type' => 'Infrastructure Event',
         'Status' => 'New',
@@ -52,13 +49,13 @@ class RemedyHelper
     Savon.client(wsdl:  File.join(File.dirname(__FILE__), "../config/remedy_wsdl/#{wdsl}"),
                  adapter: :net_http,
                  ssl_verify_mode: :none,
-                 open_timeout: @remedy_data[:open_timeout],
-                 read_timeout: @remedy_data[:read_timeout],
-                 endpoint: @remedy_data[endpoint.intern],
+                 open_timeout: @service_data[:open_timeout],
+                 read_timeout: @service_data[:read_timeout],
+                 endpoint: @service_data[endpoint.intern],
                  soap_header: { 'AuthenticationInfo' => 
-                                  { 'userName' => "#{@remedy_data[:username]}",
-                                    'password' => "#{@remedy_data[:password]}",
-                                    'authentication' => "#{@remedy_data[:authentication]}"
+                                  { 'userName' => "#{@service_data[:username]}",
+                                    'password' => "#{@service_data[:password]}",
+                                    'authentication' => "#{@service_data[:authentication]}"
                                    }
                               })
   end
@@ -95,6 +92,7 @@ class RemedyHelper
   #
   def create_tickets(tickets)
     fail 'Ticket(s) cannot be empty' if tickets.nil? || tickets.empty?
+    @metrics.created tickets.count
     client = get_client('HPD_IncidentInterface_Create_WS.xml', :create_soap_endpoint)
     send_tickets(client, :help_desk_submit_service, tickets)
   end
@@ -110,6 +108,7 @@ class RemedyHelper
       @log.log_message("No tickets to update.")
       return
     end
+    @metrics.updated tickets.count - @metrics.get_created
     client = get_client('HPD_IncidentInterface_WS.xml', :query_modify_soap_endpoint)
     send_tickets(client, :help_desk_modify_service, tickets)
   end
@@ -125,6 +124,7 @@ class RemedyHelper
       @log.log_message("No tickets to close.")
       return
     end
+    @metrics.closed tickets.count
     client = get_client('HPD_IncidentInterface_WS.xml', :query_modify_soap_endpoint)
     send_tickets(client, :help_desk_modify_service, tickets)
   end  
@@ -164,19 +164,9 @@ class RemedyHelper
   #   - List of savon-formated (hash) tickets for creating within Remedy.
   #
   def prepare_create_tickets(vulnerability_list, nexpose_identifier_id)
+    @metrics.start
     @log.log_message('Preparing ticket requests...')
-    case @options[:ticket_mode]
-    # 'D' Default IP *-* Vulnerability
-    when 'D' then matching_fields = ['ip_address', 'vulnerability_id']
-    # 'I' IP address -* Vulnerability
-    when 'I' then matching_fields = ['ip_address']
-    # 'V' Vulnerability -* Assets
-    when 'V' then matching_fields = ['vulnerability_id']
-    else
-        fail 'Unsupported ticketing mode selected.'
-    end
-
-    prepare_tickets(vulnerability_list, nexpose_identifier_id, matching_fields)
+    prepare_tickets(vulnerability_list, nexpose_identifier_id)
   end
 
   # Prepare to update tickets from the CSV of vulnerabilities exported from Nexpose. This method determines
@@ -189,18 +179,8 @@ class RemedyHelper
   #   - List of savon-formated (hash) tickets for creating within Remedy.
   #
   def prepare_update_tickets(vulnerability_list, nexpose_identifier_id)
-    case @options[:ticket_mode]
-    # 'D' Default IP *-* Vulnerability
-    when 'D' then fail 'Ticket updates are not supported in Default mode.'
-    # 'I' IP address -* Vulnerability
-    when 'I' then matching_fields = ['ip_address']
-    # 'V' Vulnerability -* Assets
-    when 'V' then matching_fields = ['vulnerability_id']
-    else
-        fail 'Unsupported ticketing mode selected.'
-    end
-
-    prepare_tickets(vulnerability_list, nexpose_identifier_id, matching_fields)
+    @metrics.start
+    prepare_tickets(vulnerability_list, nexpose_identifier_id)
   end
   
   # Prepares a list of vulnerabilities into a list of savon-formatted tickets (incidents) for 
@@ -212,7 +192,8 @@ class RemedyHelper
   # * *Returns* :
   #   - List of savon-formated (hash) tickets for creating within Remedy.
   #
-  def prepare_tickets(vulnerability_list, nexpose_identifier_id, matching_fields)
+  def prepare_tickets(vulnerability_list, nexpose_identifier_id)
+    matching_fields = @mode_helper.get_matching_fields
     @ticket = Hash.new(-1)
     
     @log.log_message("Preparing tickets for #{@options[:ticket_mode]} mode.")
@@ -222,19 +203,21 @@ class RemedyHelper
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
       if previous_row.nil?
         previous_row = row.dup        
-        description = @common_helper.get_description(nexpose_identifier_id, row)
-        @ticket = generate_new_ticket({'Summary' => "#{@common_helper.get_title(row, 100)}",
+        description = @mode_helper.get_description(nexpose_identifier_id, row)
+        @ticket = generate_new_ticket({'Summary' => "#{@mode_helper.get_title(row)}"[0...100],
                                         'Notes' => ""})
         #Skip querying for ticket if it's the initial scan
         next if row['comparison'].nil?
         
         # Query Remedy for the incident by unique id (generated NXID)
-        queried_incident = query_for_ticket("NXID: #{@common_helper.generate_nxid(nexpose_identifier_id, row)}")
+        queried_incident = query_for_ticket("NXID: #{@mode_helper.get_nxid(nexpose_identifier_id, row)}")
         if !queried_incident.nil? && queried_incident.first.is_a?(Hash)
           queried_incident.select! { |t| !['Closed', 'Resolved', 'Cancelled'].include?(t[:status]) }
         end
+
         if queried_incident.nil? || queried_incident.empty?
-          @log.log_message("No incident found for NXID: #{@common_helper.generate_nxid(nexpose_identifier_id, row)}. Creating...")
+          @log.log_message("No incident found for NXID: #{@mode_helper.get_nxid(nexpose_identifier_id, row)}. Creating...")
+
           new_ticket_csv = vulnerability_list.split("\n").first
           new_ticket_csv += "\n#{row.to_s}"
           
@@ -250,28 +233,30 @@ class RemedyHelper
           previous_row = nil
           redo
         else
-          info = @common_helper.get_field_info(matching_fields, previous_row)
+          info = @mode_helper.get_field_info(matching_fields, previous_row)
           @log.log_message("Creating ticket update with #{info} for Nexpose Identifier with ID: #{nexpose_identifier_id}")
           @log.log_message("Ticket status #{row['comparison']}")
           # Remedy incident updates require populating all fields.
           @ticket = extract_queried_incident(queried_incident, "")
         end   
       elsif matching_fields.any? { |x| previous_row[x].nil? || previous_row[x] != row[x] }
-        info = @common_helper.get_field_info(matching_fields, previous_row)
+        info = @mode_helper.get_field_info(matching_fields, previous_row)
         @log.log_message("Generated ticket with #{info}")
 
-        @ticket['Notes'] = @common_helper.print_description(description)
+        @ticket['Notes'] = @mode_helper.print_description(description)
         tickets.push(@ticket)
         previous_row = nil
         description = nil
         redo
       else
-        description = @common_helper.update_description(description, row)        
+        description = @mode_helper.update_description(description, row)        
       end
     end
 
     unless @ticket.nil? || @ticket.empty?
-      @ticket['Notes'] = @common_helper.print_description(description)
+      info = @mode_helper.get_field_info(matching_fields, previous_row)
+      @log.log_message("Creating ticket update with #{info} for Nexpose Identifier with ID: #{nexpose_identifier_id}")
+      @ticket['Notes'] = @mode_helper.print_description(description)
       tickets.push(@ticket)
     end
 
@@ -351,7 +336,7 @@ class RemedyHelper
       return ticket_from_queried_incident(queried_incident, notes_header, nil) 
     end
 
-    fail "Multiple tickets returned for same NXID" if queried_incidents.count > 1 
+    fail "Multiple tickets returned for same NXID" if queried_incident.count > 1 
     ticket_from_queried_incident(queried_incident.first, notes_header, nil)
   end
 
@@ -368,7 +353,7 @@ class RemedyHelper
     @nxid = nil
     tickets = []
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
-      @nxid = @common_helper.generate_nxid(nexpose_identifier_id, row)
+      @nxid = @mode_helper.get_nxid(nexpose_identifier_id, row)
 
       # Query Remedy for the incident by unique id (generated NXID)
       queried_incident = query_for_ticket("NXID: #{@nxid}")

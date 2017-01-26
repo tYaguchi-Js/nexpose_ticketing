@@ -1,3 +1,4 @@
+require 'tempfile'
 require 'nexpose'
 require 'securerandom'
 include Nexpose
