@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+require 'yaml'
+require 'nexpose_ticketing'
+require 'nexpose_ticketing/nx_logger'
+require 'nexpose_ticketing/version'
+require 'optparse'
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: nexpose_ticketing [service name]"
+end.parse!
+
+if ARGV.count == 0
+  puts 'Ticketing system name required.'
+  exit -1
+end
+
+system = ARGV.first
+config_path = File.join(File.dirname(__FILE__),
+                        "../lib/nexpose_ticketing/config/#{system}.config")
+
+unless File.exists? config_path
+  puts "Configuration file could not be found at #{config_path}"
+  exit -1
+end
+
+# Read in JIRA options from jira.config.
+service_options = begin
+  YAML.load_file(config_path)
+rescue ArgumentError => e
+  raise "Could not parse YAML #{config_path} : #{e.message}"
+end
+
+log = NexposeTicketing::NxLogger.instance
+log.setup_statistics_collection(service_options[:vendor], 
+                                service_options[:product], 
+                                NexposeTicketing::VERSION)
+log.setup_logging(true, 'info')
+
+current_encoding = Encoding.default_external=Encoding.find("UTF-8")
+
+log.log_message("Current Encoding set to: #{current_encoding}")
+
+# Initialize Ticket Service using JIRA.
+NexposeTicketing.start(service_options)

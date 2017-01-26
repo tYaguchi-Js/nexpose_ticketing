@@ -1,22 +1,19 @@
 require 'net/http'
 require 'nokogiri'
 require 'dbm'
-require 'nexpose_ticketing/common_helper'
+require_relative './base_helper'
 require 'nexpose_ticketing/nx_logger'
 require 'nexpose_ticketing/version'
 
-class ServiceDeskHelper
-  attr_accessor :servicedesk_data, :options, :log
+class ServiceDeskHelper < BaseHelper
+  attr_accessor :log
 
-  def initialize(servicedesk_data, options)
-    @servicedesk_data = servicedesk_data
-    @options = options
-    @log = NexposeTicketing::NxLogger.instance
+  def initialize(service_data, options, mode)
+    super(service_data, options, mode)
 
-    @rest_uri = servicedesk_data[:rest_uri]
-    @api_key = servicedesk_data[:api_key]
-    @ticket_db_path = servicedesk_data[:ticket_db_path]
-    @common_helper = NexposeTicketing::CommonHelper.new(@options)
+    @rest_uri = service_data[:rest_uri]
+    @api_key = service_data[:api_key]
+    @ticket_db_path = service_data[:ticket_db_path]
   end
 
 
@@ -62,26 +59,17 @@ class ServiceDeskHelper
 
   def prepare_create_tickets(vulnerability_list, nexpose_identifier_id)
     @log.log_message('Preparing ticket creation...')
-    case @options[:ticket_mode]
-    # 'D' Default IP *-* Vulnerability
-    when 'D' then matching_fields = ['ip_address', 'vulnerability_id']
-    # 'I' IP address -* Vulnerability
-    when 'I' then matching_fields = ['ip_address']
-    # 'V' Vulnerability -* Assets
-    when 'V' then matching_fields = ['vulnerability_id']
-    else
-      fail 'Unsupported ticketing mode selected.'
-    end
-
-    tickets = prepare_tickets(vulnerability_list, nexpose_identifier_id, matching_fields)
+    tickets = prepare_tickets(vulnerability_list, nexpose_identifier_id)
 
     tickets.each { |ticket| @log.log_message("Prepared ticket: #{ticket}")}
     tickets
   end
 
 
-  def prepare_tickets(vulnerability_list, nexpose_identifier_id, matching_fields)
+  def prepare_tickets(vulnerability_list, nexpose_identifier_id)
+    @metrics.start
     @log.log_message("Preparing ticket for #{@options[:ticket_mode]} mode.")
+    matching_fields = @mode_helper.get_matching_fields
     tickets = []
     host_vulns={}
     previous_row = nil
@@ -94,39 +82,40 @@ class ServiceDeskHelper
       initial_scan = initial_scan || row['comparison'].nil?
         
       if previous_row.nil?
-        nxid = @common_helper.generate_nxid(nexpose_identifier_id, row)
+        nxid = @mode_helper.get_nxid(nexpose_identifier_id, row)
         previous_row = row.dup
-        description = @common_helper.get_description(nexpose_identifier_id, row)  
+        description = @mode_helper.get_description(nexpose_identifier_id, row)  
 
         host_vulns[nxid] = { :ip => row['ip_address'], 
                              :description => "",
-                             :title => @common_helper.get_title(row) } 
+                             :title => @mode_helper.get_title(row) } 
       elsif matching_fields.any? {  |x| previous_row[x].nil? || previous_row[x] != row[x] }
-        nxid = @common_helper.generate_nxid(nexpose_identifier_id, previous_row)
-        info = @common_helper.get_field_info(matching_fields, previous_row)
+        info = @mode_helper.get_field_info(matching_fields, previous_row)
         @log.log_message("Generated ticket with #{info}")
 
-        host_vulns[nxid][:description] = @common_helper.print_description(description)
+        host_vulns[nxid][:description] = @mode_helper.print_description(description)
         previous_row = nil
         description = nil
         redo
       else
-        description = @common_helper.update_description(description, row)
+        description = @mode_helper.update_description(description, row)
       end
     end
 
     unless host_vulns[nxid].nil? || host_vulns[nxid].empty?
-      host_vulns[nxid][:description] = @common_helper.print_description(description)
+      host_vulns[nxid][:description] = @mode_helper.print_description(description)
     end
 
     host_vulns.each do |nxid, vuln_info|
       workorderid = initial_scan ? nil : find_ticket_in_database(nxid)
       if workorderid.nil? || workorderid.empty?
         @log.log_message("Creating new incident for assetid #{nxid}")
+        @metrics.created
         tickets << { :action => :create, :nxid => nxid,
                      :description => create_ticket_request(vuln_info[:title], vuln_info[:description]) }
       else
         @log.log_message("Updating incident for assetid #{nxid}")
+        @metrics.updated
         tickets << { :action => :modify, :nxid => nxid, 
                      :workorderid => workorderid,
                      :description => modify_ticket_request(vuln_info[:description]) }
@@ -145,7 +134,7 @@ class ServiceDeskHelper
                 xml.text 'requester'
             }
             xml.value {
-              xml.text @servicedesk_data[:requester]
+              xml.text @service_data[:requester]
             }
           }
           xml.parameter {
@@ -153,7 +142,7 @@ class ServiceDeskHelper
               xml.text 'Group'
             }
             xml.value {
-              xml.text @servicedesk_data[:group]
+              xml.text @service_data[:group]
             }
           }
           xml.parameter {
@@ -197,7 +186,7 @@ class ServiceDeskHelper
                 xml.text 'requester'
             }
             xml.value {
-              xml.text @servicedesk_data[:requester]
+              xml.text @service_data[:requester]
             }
           }
           xml.parameter {
@@ -295,18 +284,7 @@ class ServiceDeskHelper
 
   def prepare_update_tickets(vulnerability_list, nexpose_identifier_id)
     @log.log_message('Preparing ticket updates...')
-    case @options[:ticket_mode]
-    # 'D' Default IP *-* Vulnerability
-    when 'D' then fail 'Ticket updates are not supported in Default mode.'
-    # 'I' IP address -* Vulnerability
-    when 'I' then matching_fields = ['ip_address']
-    # 'V' Vulnerability -* Assets
-    when 'V' then matching_fields = ['vulnerability_id']
-    else
-        fail 'Unsupported ticketing mode selected.'
-    end
-
-    prepare_tickets(vulnerability_list, nexpose_identifier_id, matching_fields)
+    prepare_tickets(vulnerability_list, nexpose_identifier_id)
   end
 
 
@@ -336,7 +314,7 @@ class ServiceDeskHelper
     @nxid = nil
     tickets = []
     CSV.parse(vulnerability_list.chomp, headers: :first_row)  do |row|
-      @nxid = @common_helper.generate_nxid(nexpose_identifier_id, row)
+      @nxid = @mode_helper.get_nxid(nexpose_identifier_id, row)
 
       workorderid = find_ticket_in_database(@nxid)
       # Query ServiceDesk for the incident by unique id (generated NXID)
@@ -352,8 +330,11 @@ class ServiceDeskHelper
   end
 
 
+
   def close_tickets( tickets )
-    tickets.each { |ticket| close_ticket(ticket) if ticket[:action] == :close && !ticket[:workorderid].nil?}
+    to_close = tickets.select { |t| t[:action] == :close && !t[:workorderid].nil? }
+    @metrics.closed to_close.count
+    to_close.each { |ticket| close_ticket(ticket) }
     remove_tickets_from_database(tickets)
   end
 end

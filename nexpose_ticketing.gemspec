@@ -10,16 +10,16 @@ Gem::Specification.new do |s|
   s.summary               = 'Ruby Nexpose Ticketing Engine.'
   s.description           = 'This gem provides a Ruby implementation of different integrations with ticketing services for Nexpose.'
   s.license               = 'BSD'
-  s.authors               = ['Damian Finol'], ['JJ Cassidy'], ['David Valente']
-  s.email                 = ['integrations_support@rapid7.com']
+  s.authors               = ['Damian Finol'], ['JJ Cassidy'], ['David Valente'], ['Adam Robinson']
+  s.email                 = ['support@rapid7.com']
   s.files                 = Dir['[A-Z]*'] + Dir['lib/**/*'] + Dir['tests/**']
   s.files.reject!          { |fn| fn.include? ".gem" }
   s.require_paths         = ['lib']
   s.extra_rdoc_files      = ['README.md']
-  s.required_ruby_version = '>= 1.9'
+  s.required_ruby_version = '>= 2.1.5'
   s.platform              = 'ruby'
-  s.executables           = ['nexpose_jira','nexpose_servicenow','nexpose_remedy', 'nexpose_servicedesk']
-  s.add_runtime_dependency 'nexpose', '~> 2.1', '>= 2.1.0'
+  s.executables           = ['nexpose_ticketing']
+  s.add_runtime_dependency 'nexpose', '~> 3.1', '>= 3.1.0'
   s.add_runtime_dependency 'savon', '~> 2.1'
   s.add_runtime_dependency 'nokogiri', '~> 1.6'
   s.add_development_dependency 'rspec', '~> 3.2', '>= 3.2.0'
