@@ -77,18 +77,26 @@ We welcome contributions to this package. We ask only that pull requests and pat
 
 ## Changelog
 
+
+### 1.4.1
+11-04-17
+
+Resolved issue with creating Initial tickets using the ServiceNow helper
+
 ### 1.4.0
 11-04-17
 
 #### General Ticket Generation
-The Nexpose Ticketing gem has moved away from generating most of its data for current vulnerabilities via the Nexpose reporting engine and ad hoc reports. 
+
+The Nexpose Ticketing gem has moved away from generating most of its data for current vulnerabilities via the Nexpose reporting engine and ad-hoc reports. 
+
 - It now uses the [Nexpose-Client gem](https://rubygems.org/gems/nexpose) to retrieve current information on vulnerabilities affecting assets on a per site or per tag basis.  
 - For calculating new, same or old vulnerability information, a basic report of the previous scan is still generated for comparison.  
 - Overall, the speed of the Ticketing gem has been improved for larger data sets.
 
 ###### Ticket Service
 - Batches information by the maximum number of tickets per batch (batch_ticket_limit), as well as by the size of the batch (batch_size). These options are set in the ticket_service.config file. 
-- These values should be definied for a users environment and specific setup.
+- These values should be defined for a users environment and specific setup.
 
 ###### Ticket Repository
 - Has been updated to produce CSV reports using the Nexpose-Client gem for both initial and delta runs. 
@@ -120,10 +128,10 @@ General bug fixes for most classes. Notable listed below
 - Ticket service was calling the incorrect query when closing tickets in Default mode.
 
 ###### Ticket Repository
-- Method to generate the report in Nexpose was incorreclty applying the site id from the ticket\_service.config file, rather than the value passed in. This may have resulted in an asset in a tag group not being correctly scanned.
+- Method to generate the report in Nexpose was incorrectly applying the site id from the ticket\_service.config file, rather than the value passed in. This may have resulted in an asset in a tag group not being correctly scanned.
 
 ###### JIRA Helper
-- 'Code' error: The create\_tickets method was trying to parse the reponse code from the HTTP response from JIRA. This was causing the integration to fail on success, as the response was not returned from the send\_tickets method on success.
+- 'Code' error: The create\_tickets method was trying to parse the response code from the HTTP response from JIRA. This was causing the integration to fail on success, as the response was not returned from the send\_tickets method on success.
 
 ###### ServiceNow Helper
 - Helper now retries retrieving sys_id for tickets from ServiceNow and skips if it cannot retrieve it.

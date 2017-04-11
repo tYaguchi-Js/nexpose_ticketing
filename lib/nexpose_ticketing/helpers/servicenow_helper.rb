@@ -124,7 +124,7 @@ class ServiceNowHelper < BaseHelper
       request = generate_post_request(ticket.to_json,
                                       ticket_index == final_ticket)
       hydra.queue request
-      ticket_index++
+      ticket_index += 1
       request
     end
 
