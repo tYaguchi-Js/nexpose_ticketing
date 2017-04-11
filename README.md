@@ -71,7 +71,7 @@ Please see jira\_helper.rb under helpers for an helper example, and two\_vulns\_
 We welcome contributions to this package. We ask only that pull requests and patches adhere to our coding standards.
 
 * Favor returning classes over key-value maps. Classes tend to be easier for users to manipulate and use.
-* Unless otherwise noted, code should adhere to the [Ruby Style Guide] (https://github.com/bbatsov/ruby-style-guide).
+* Unless otherwise noted, code should adhere to the [Ruby Style Guide](https://github.com/bbatsov/ruby-style-guide).
 * Use YARDoc comment style to improve the API documentation of the gem.
 * Pull requests may not be accepted for user specific use-cases.
 
@@ -82,7 +82,7 @@ We welcome contributions to this package. We ask only that pull requests and pat
 
 #### General Ticket Generation
 The Nexpose Ticketing gem has moved away from generating most of its data for current vulnerabilities via the Nexpose reporting engine and ad hoc reports. 
-- It now uses the [Nexpose-Client gem] (https://rubygems.org/gems/nexpose) to retrieve current information on vulnerabilities affecting assets on a per site or per tag basis.  
+- It now uses the [Nexpose-Client gem](https://rubygems.org/gems/nexpose) to retrieve current information on vulnerabilities affecting assets on a per site or per tag basis.  
 - For calculating new, same or old vulnerability information, a basic report of the previous scan is still generated for comparison.  
 - Overall, the speed of the Ticketing gem has been improved for larger data sets.
 
