@@ -55,6 +55,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     require 'nexpose_ticketing'
     require 'nexpose_ticketing/nx_logger'
     require 'nexpose_ticketing/version'
+    require 'nexpose_ticketing/store'
 
     TICKET_SERVICE_CONFIG_PATH =  File.join(File.dirname(__FILE__), '/config/ticket_service.config')
     LOGGER_FILE = File.join(File.dirname(__FILE__), '/logs/ticket_service.log')
@@ -84,8 +85,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       # Sets logging up, if enabled.
       setup_logging(@options[:logging_enabled])
 
+
       mode_class = load_class 'mode', @options[:ticket_mode]
       @mode = mode_class.new(@options)
+
       @options[:query_suffix] = @mode.get_query_suffix
 
       helper_class = load_class 'helper', @helper_data[:helper_name]
@@ -94,6 +97,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       log_message("Creating ticketing repository with timeout value: #{@options[:timeout]}.")
       @ticket_repository = NexposeTicketing::TicketRepository.new(options)
       @ticket_repository.nexpose_login(@nexpose_data)
+
+      solutions = get_solutions
+      @mode.set_solution_store solutions
     end
 
     def load_class(type, name)
@@ -156,11 +162,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       
       items_to_query.each do |item|
         log_message("Running full vulnerability report on item #{item}")
-        all_vulns_file = ticket_repository.all_new_vulns(options, item)
+        initial_scan_file = ticket_repository.generate_initial_scan_data(options,
+                                                                         item)
+
         log_message('Preparing tickets.')
-
-        ticket_rate_limiter(all_vulns_file, 'create', item)
-
+        nexpose_id = format_id(item)
+        ticket_rate_limiter(initial_scan_file, 'create', nexpose_id)
         post_scan(item_id: item, generate_asset_list: true)
       end
 
@@ -168,7 +175,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     end
 
     # There's possibly a new scan with new data.
-    def delta_site_report(ticket_repository, options, helper, scan_histories)
+    def delta_site_report(ticket_repository, options, scan_histories)
       # Compares the scan information from file && Nexpose.
       no_processing = true
       @latest_scans.each do |item_id, last_scan_id|
@@ -177,13 +184,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         # There's no entry in the file, so it's either a new item in Nexpose or a new item we have to monitor.
         if prev_scan_id.nil? || prev_scan_id == -1
           options[:nexpose_item] = item_id
-          full_new_site_report(item_id, ticket_repository, options, helper)
+          full_new_site_report(item_id, ticket_repository, options)
           options[:nexpose_item] = nil
           post_scan(item_id: item_id, generate_asset_list: true)
           no_processing = false
         # Site has been scanned since last seen according to the file.
         elsif prev_scan_id.to_s != @latest_scans[item_id].to_s
-          delta_new_scan(item_id, options, helper, scan_histories)
+          delta_new_scan(item_id, options, scan_histories)
           post_scan item_id: item_id
           no_processing = false
         end
@@ -200,14 +207,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     end
 
     # There's a new site we haven't seen before.
-    def full_new_site_report(nexpose_item, ticket_repository, options, helper)
+    def full_new_site_report(nexpose_item, ticket_repository, options)
       log_message("New nexpose id: #{nexpose_item} detected. Generating report.")
       options[:scan_id] = 0
-      new_item_vuln_file = ticket_repository.all_new_vulns(options, nexpose_item)
-      log_message('Report generated, preparing tickets.')
+
+      initial_scan_file = ticket_repository.generate_initial_scan_data(options,
+                                                                       nexpose_item)
+      log_message('Preparing tickets.')
 
       nexpose_id = format_id(nexpose_item)
-      ticket_rate_limiter(new_item_vuln_file, 'create', nexpose_id)
+      ticket_rate_limiter(initial_scan_file, 'create', nexpose_id)
     end
 
     def ticket_rate_limiter_processor(ticket_batch, ticket_method, nexpose_item)
@@ -234,44 +243,52 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     def ticket_rate_limiter(query_results_file, ticket_method, nexpose_item)
       batch_size_max = @options[:batch_size]
+      max_tickets = @options[:batch_ticket_limit]
+
       log_message("Batching tickets in sizes: #{@options[:batch_size]}")
-      matching_fields = @mode.get_matching_fields
-      current_ids = Hash[*matching_fields.collect { |k| [k, nil] }.flatten]
+      fields = @mode.get_matching_fields
+      current_ids = Hash[*fields.collect { |k| [k, nil] }.flatten]
 
       # Start the batching
       query_results_file.rewind
       csv_header = query_results_file.readline
-      ticket_batch = []
-      
+      batch = []
+      individual_ticket = []
+      ticket_count = 0
+      prev_row = nil
+
       begin
         CSV.foreach(query_results_file, headers: csv_header) do |row|
-          ticket_batch << row
+          if prev_row.nil?
+            # First row of a ticket
+            prev_row = row
+            ticket_count = ticket_count + 1
+            individual_ticket = [row]
+          elsif fields.any? { |k| prev_row[k].nil? || prev_row[k] != row[k] }
+            # New ticket found
+            prev_row = nil
+            batch.concat individual_ticket
 
-          # Store the current 
-          if ticket_batch.size < batch_size_max
-            matching_fields.each { |id| current_ids[id] = row[id] }
-            next
+            if batch.count >= batch_size_max || ticket_count >= max_tickets
+              ticket_rate_limiter_processor(batch, ticket_method, nexpose_item)
+
+              ticket_count = 0
+              batch.clear
+              batch << csv_header
+            end
+
+            redo
+          else
+            # Another row for existing ticket
+            individual_ticket << row
           end
-
-          # Ensure that all rows associated with a ticket are captured.
-          # This potentially ignores the batch limit.
-          next if current_ids.all? { |id, val| val == row[id] }
-        
-          #Last row is mismatch/independent
-          leftover_row = ticket_batch.pop
-
-          log_message('Batch size reached. Sending tickets.')
-          ticket_rate_limiter_processor(ticket_batch, ticket_method, nexpose_item)
-          
-          ticket_batch.clear
-          ticket_batch << csv_header
-          ticket_batch << leftover_row
-          current_ids.each { |k,v| k = nil }
         end
       ensure
         log_message('Finished reading report. Sending any remaining tickets and cleaning up file system.')
 
-        ticket_rate_limiter_processor(ticket_batch, ticket_method, nexpose_item)
+        # Finish adding to the batch
+        batch.concat individual_ticket
+        ticket_rate_limiter_processor(batch, ticket_method, nexpose_item)
 
         query_results_file.close
         query_results_file.unlink
@@ -288,6 +305,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       # Checks if the csv historical file already exists and reads it, otherwise create it and assume first time run.
       scan_histories = prepare_historical_data(@ticket_repository, @options)
 
+
       # If we didn't specify a site || first time run (no scan history), then it gets all the vulnerabilities.
       @options[:initial_run] = full_scan_required?(scan_histories)
 
@@ -299,6 +317,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       @helper.finish
       log_message('Exiting ticket service.')
+    end
+
+    def get_solutions
+      log_message('Retrieving solutions from Nexpose')
+      store = Store.new
+      return store if Store.store_exists?
+
+      store.set_path(@ticket_repository.get_solution_data)
+
+      log_message('Parsing and storing solutions.')
+      store.fill_store
+
+      log_message('Solution store created.')
+      store
     end
 
     def full_scan
@@ -324,23 +356,33 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       # Only run if a scan has been ran ever in Nexpose.
       return if @latest_scans.empty?
 
-      delta_site_report(@ticket_repository, @options, @helper, scan_histories)
+      delta_site_report(@ticket_repository, @options, scan_histories)
       log_message('Historical CSV file updated.')
     end
 
     # Performs a delta scan
-    def delta_new_scan(item_id, options, helper, scan_histories)
+    def delta_new_scan(item_id, options, scan_histories)
       delta_func = "delta_#{options[:scan_mode]}_new_scan"
-      self.send(delta_func, item_id, options, helper, scan_histories)
+      self.send(delta_func, item_id, options, scan_histories)
     end
 
     # There's a new scan with possibly new vulnerabilities.
-    def delta_site_new_scan(nexpose_item, options, helper, file_site_histories, tag_id=nil)
+    def delta_site_new_scan(nexpose_item, options, file_site_histories, tag_id=nil)
       log_message("New scan detected for nexpose id: #{nexpose_item}. Generating report.")
       
       format_method = "format_#{options[:scan_mode]}_id"
       nexpose_id = self.send(format_method, tag_id || nexpose_item)
-      
+
+      log_message("Scan id for new scan: #{file_site_histories[nexpose_item]}.")
+
+      if @mode.updates_supported?
+        helper_method = 'update'
+        old_vulns_mode = 'old_ticket'
+      else
+        helper_method = 'create'
+        old_vulns_mode = 'old'
+      end
+
       scan_options = { scan_id: file_site_histories[nexpose_item],
                        nexpose_item: nexpose_item,
                        severity: options[:severity],
@@ -348,30 +390,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                        riskScore: options[:riskScore],
                        vulnerabilityCategories: options[:vulnerabilityCategories],
                        tag_run: options[:tag_run],
-                       tag: tag_id }
+                       tag: tag_id,
+                       old_vulns_mode: old_vulns_mode }
 
-      log_message("Scan id for new scan: #{file_site_histories[nexpose_item]}.")
+      close_tickets = (options[:close_old_tickets_on_update] == 'Y')
 
-      if @mode.updates_supported?
-        helper_method = 'update'
-        new_vulns_query = 'all_vulns_since_scan'
-        old_vulns_query = 'old_tickets'
-      else
-        helper_method = 'create'
-        new_vulns_query = 'new_vulns_since_scan'
-        old_vulns_query = 'old_vulns_since_scan'
-      end
+      csv_files = @ticket_repository.generate_delta_csv(scan_options,
+                                                        close_tickets)
+      delta_scan_file = csv_files[:new_csv]
 
-      all_scan_vuln_file = ticket_repository.send(new_vulns_query, scan_options)
-      ticket_rate_limiter(all_scan_vuln_file, helper_method, nexpose_id)
+      log_message('Preparing tickets.')
+
+      ticket_rate_limiter(delta_scan_file, helper_method, nexpose_id)
         
-      return unless options[:close_old_tickets_on_update] == 'Y'
+      return unless close_tickets
 
-      tickets_to_close_file = ticket_repository.send(old_vulns_query, scan_options)
-      ticket_rate_limiter(tickets_to_close_file, 'close', nexpose_id)
+      old_vulns_file = csv_files[:old_csv]
+
+      ticket_rate_limiter(old_vulns_file, 'close', nexpose_id)
     end
 
-    def delta_tag_new_scan(nexpose_item, options, helper, file_site_histories, tag_id=nil)
+    def delta_tag_new_scan(nexpose_item, options, file_site_histories, tag_id=nil)
       # It's a tag run and something has changed (new/removed asset or new scan ID for an asset). To find out what, we must compare
       # All tag assets and their scan IDs. Firstly we fetch all the assets in the tags
       # in the configuration file and store them temporarily
@@ -389,14 +428,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       #all_assets_changed = new_assets.merge(changed_assets)
       changed_assets.each do |asset_id, scan_id|
-        delta_site_new_scan(asset_id, options,
-                            helper, changed_assets, item_id)
+        delta_site_new_scan(asset_id, options, changed_assets, item_id)
       end
 
       new_assets.each do |asset_id, scan_id|
         #Since no previous scan IDs - we generate a full report.
         options[:nexpose_item] = asset_id
-        full_new_site_report(item_id, ticket_repository, options, helper)
+        full_new_site_report(item_id, ticket_repository, options)
         options.delete(:nexpose_item)
       end
 

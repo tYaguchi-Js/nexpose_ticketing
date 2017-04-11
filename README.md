@@ -40,7 +40,9 @@ To use the JIRA implementation please follow these steps:
 
 Note: Gem is usually installed under
  * Windows: C:\Ruby\<version\>\lib\ruby\gems\version\gems
- * Linux: /var/lib/gems/\<version\>/gems/ or /home/\<user\>/.rvm/gems/\<version\>/gems/
+ * Linux: 
+    * Using RVM - /home/\<user\>/.rvm/gems/\<version\>/gems/
+    * Or using a general install - /var/lib/gems/\<version\>/gems/
 
 Please refer to your particular Ruby documentation for actual installation folder.
 
@@ -73,9 +75,34 @@ We welcome contributions to this package. We ask only that pull requests and pat
 * Use YARDoc comment style to improve the API documentation of the gem.
 * Pull requests may not be accepted for user specific use-cases.
 
-##Changelog
+## Changelog
 
-###1.3.0
+### 1.4.0
+11-04-17
+
+#### General Ticket Generation
+The Nexpose Ticketing gem has moved away from generating most of its data for current vulnerabilities via the Nexpose reporting engine and ad hoc reports. 
+- It now uses the [Nexpose-Client gem] (https://rubygems.org/gems/nexpose) to retrieve current information on vulnerabilities affecting assets on a per site or per tag basis.  
+- For calculating new, same or old vulnerability information, a basic report of the previous scan is still generated for comparison.  
+- Overall, the speed of the Ticketing gem has been improved for larger data sets.
+
+###### Ticket Service
+- Batches information by the maximum number of tickets per batch (batch_ticket_limit), as well as by the size of the batch (batch_size). These options are set in the ticket_service.config file. 
+- These values should be definied for a users environment and specific setup.
+
+###### Ticket Repository
+- Has been updated to produce CSV reports using the Nexpose-Client gem for both initial and delta runs. 
+- For delta runs, it does a comparison with the vulnerable items from the previous scan imported by the integration to calculate new, same and old tickets.  
+- The repository still uses the Nexpose reporting engine for additional vulnerability information, as well as previous scan information
+
+###### ServiceNow Helper
+- The ServiceNow helper has been updated to improve the time taken to send incident tickets to ServiceNow.
+
+###### GemSpec
+- The license has been modified.  
+- The version of the Nexpose-Client gem required has been increased.
+
+### 1.3.0
 25-01-17
 
 #### JIRA Helper
@@ -109,9 +136,9 @@ General bug fixes for most classes. Notable listed below
 
 
 
-###1.2.0
+### 1.2.0
 
-####Configuration Options
+#### Configuration Options
 Ticketing mode must be specified using the entire title, rather than a single character. e.g. 'Vulnerability' instead of 'V'
 Added the following configuration option:
 - log_console - NXLogger also gets printed to the console.
@@ -128,7 +155,7 @@ Code for the ticket\_service, ticket\_repository and helpers has been refactored
 - Ticketing helpers now log the number of tickets that are opened/closed/updated.
 - Helpers now support all ticketing modes
 
-###1.1.0
+### 1.1.0
 10-02-2016
 
 ##### Configuration
@@ -137,7 +164,7 @@ Added the following configuration options:
 - max_title_length - Specifies a maximum length for the title of a ticket.
 - max_num_refs - Specifies the maximum number of references included in a vulnerability description.
 
-###1.0.2
+### 1.0.2
 08-02-2016
 
 Encoding is now enforced as UTF-8 when parsing CSV files - fixes environment-specific errors.
@@ -151,7 +178,7 @@ Encoding is now enforced as UTF-8 when parsing CSV files - fixes environment-spe
 ##### ServiceNow:
 - No longer queries for existing incident if ticket is new.
 
-###1.0.1
+### 1.0.1
 19-01-2016
 
 ##### ServiceNow Helper:
@@ -170,7 +197,7 @@ Encoding is now enforced as UTF-8 when parsing CSV files - fixes environment-spe
 ##### Report Helper:
 - Temp report is flushed before being returned (preventing some timing-based issues).
 
-###1.0.0
+### 1.0.0
 10-12-2015
 
 ##### Queries:

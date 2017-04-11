@@ -27,7 +27,7 @@ module NexposeTicketing
 
     def finish
       return if @start_time == nil  
-      @time_taken = Time.at(Time.now - @start_time).utc.strftime("%H:%M:%S")
+      @time_taken = Time.at(Time.now - @start_time).utc.strftime('%H:%M:%S')
       @start_time = nil
 
       @log.log_message("Ticket processing took #{@time_taken} to complete.")

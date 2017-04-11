@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.homepage              = 'https://github.com/rapid7/nexpose_ticketing'
   s.summary               = 'Ruby Nexpose Ticketing Engine.'
   s.description           = 'This gem provides a Ruby implementation of different integrations with ticketing services for Nexpose.'
-  s.license               = 'BSD'
+  s.license               = 'Ruby'
   s.authors               = ['Damian Finol'], ['JJ Cassidy'], ['David Valente'], ['Adam Robinson']
   s.email                 = ['support@rapid7.com']
   s.files                 = Dir['[A-Z]*'] + Dir['lib/**/*'] + Dir['tests/**']
@@ -19,9 +19,10 @@ Gem::Specification.new do |s|
   s.required_ruby_version = '>= 2.1.5'
   s.platform              = 'ruby'
   s.executables           = ['nexpose_ticketing']
-  s.add_runtime_dependency 'nexpose', '~> 3.1', '>= 3.1.0'
+  s.add_runtime_dependency 'nexpose', '~> 5.3.1', '>= 3.1.0'
   s.add_runtime_dependency 'savon', '~> 2.1'
   s.add_runtime_dependency 'nokogiri', '~> 1.6'
+  s.add_runtime_dependency 'typhoeus', '~> 1.1', '>= 1.1.2'
   s.add_development_dependency 'rspec', '~> 3.2', '>= 3.2.0'
   s.add_development_dependency 'rspec-mocks', '~> 3.2', '>= 3.2.0'
 end

@@ -13,12 +13,9 @@ module NexposeTicketing
     #   - Returns String - Formatted SQL string for inserting into queries.
     #
     def self.createRiskString(riskScore)
-      if riskScore.nil?
-        riskString = ""
-      else
-        riskString = "WHERE fa.riskscore >= #{riskScore}"
-      end
-      return riskString
+      return '' if riskScore.nil?
+
+      "WHERE fa.riskscore >= #{riskScore}"
     end
 
     # Formats SQL query for filtering per asset based on user config options.
@@ -32,11 +29,10 @@ module NexposeTicketing
 
     def self.createAssetString(options)
       if options[:tag_run] && options[:nexpose_item]
-        assetString = "WHERE asset_id = #{options[:nexpose_item]}"
+        "WHERE asset_id = #{options[:nexpose_item]}"
       else
-        assetString = ""
+        ''
       end
-      return assetString
     end
 
     # Gets all the latest scans for sites.
@@ -45,6 +41,16 @@ module NexposeTicketing
       'SELECT ds.site_id, ds.last_scan_id, dsc.finished
         FROM dim_site ds
         JOIN dim_scan dsc ON ds.last_scan_id = dsc.scan_id'
+    end
+
+    # Returns the solutions for every vulnerability
+    # stored within Nexpose
+    def self.all_solutions
+      "SELECT solution_id, nexpose_id,
+              summary,
+              proofAsText(fix) as fix,
+              url
+       FROM dim_solution"
     end
 
     # Gets all the latest scans for tags.
@@ -56,43 +62,96 @@ module NexposeTicketing
       order by dta.tag_id, dta.asset_id, fa.last_scan_id, fa.scan_finished'
     end
 
+    # Returns the current necessary information on vulnerable_instances for a
+    # site / tag to create a ticket, for IP mode
+    # * *Returns* :
+    #   - Returns |asset_id| |vulnerability_id| |first_discovered|
+    #             |most_recently_discovered| |solution_ids|
+    def self.all_new_vulns_by_ip(options={})
+      'SELECT asset_id, vulnerability_id,
+         first_discovered, most_recently_discovered,
+         array_agg(solution_id) as solution_ids
+        FROM (
+          SELECT asset_id, vulnerability_id
+          FROM fact_asset_vulnerability_finding) favf
+        JOIN (
+          SELECT asset_id, vulnerability_id, first_discovered,
+            most_recently_discovered
+          FROM fact_asset_vulnerability_age) fava USING (asset_id, vulnerability_id)
+        LEFT JOIN dim_asset_vulnerability_solution USING (asset_id, vulnerability_id)
+        GROUP BY asset_id, vulnerability_id, first_discovered, most_recently_discovered
+        ORDER BY asset_id, vulnerability_id'
+    end
+
+    # Returns the current necessary information on vulnerable_instances for a
+    # site to creating a ticket, for Vulnerability mode
+    # * *Returns* :
+    #   - Returns |vulnerability_id| |solution_ids| |references|
+    def self.all_new_vulns_by_vuln_id(options={})
+      "SELECT DISTINCT(vulnerability_id) vulnerability_id,
+         array_agg(DISTINCT solution_id) as solution_ids,
+         string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references
+        FROM (
+          SELECT asset_id, vulnerability_id
+          FROM fact_asset_vulnerability_finding) favf
+        LEFT JOIN dim_asset_vulnerability_solution USING (asset_id, vulnerability_id)
+        LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
+        GROUP BY vulnerability_id
+        ORDER BY vulnerability_id"
+    end
+
+    # Returns information on the previous state of the site / tag, for IP mode
+    # * *Returns* :
+    #   - Returns |asset_id| |vulnerability_id| |scan_id|
+    def self.last_scan_state_by_ip(options={})
+      "SELECT asset_id, vulnerability_id, scan_id
+       FROM fact_asset_scan_vulnerability_finding
+       WHERE scan_id = #{options[:scan_id]}
+       ORDER BY asset_id, vulnerability_id"
+    end
+
+    # Returns information on the previous state of the site, for Vulnerability
+    # mode
+    # * *Returns* :
+    #   - Returns |vulnerability_id| |asset_ids| |scan_id|
+    def self.last_scan_state_by_vuln_id(options={})
+      "SELECT DISTINCT(vulnerability_id) vulnerability_id,
+        array_agg(DISTINCT asset_id) as asset_ids, scan_id
+       FROM fact_asset_scan_vulnerability_finding
+       WHERE scan_id = #{options[:scan_id]}
+       GROUP BY vulnerability_id, scan_id
+       ORDER BY vulnerability_id"
+    end
+
+    def self.all_new_vulns_by_ip_solutions(options={})
+      'SELECT asset_id, vulnerability_id, summary, fix, url
+        FROM (select asset_id, vulnerability_id FROM fact_asset_scan_vulnerability_finding) fasv
+        JOIN dim_asset_vulnerability_solution dvs USING (asset_id, vulnerability_id)
+        JOIN (select solution_id, summary, fix, url FROM dim_solution) ds USING (solution_id)
+        ORDER BY asset_id, vulnerability_id'
+    end
+
     # Gets all delta vulns for all sites sorted by IP.
     #
     # * *Returns* :
-    #   -Returns |asset_id| |ip_address| |current_scan|  |vulnerability_id||solution_id| |nexpose_id| 
+    #   -Returns |asset_id| |ip_address| |current_scan|  |vulnerability_id||solution_id| |nexpose_id|
     #    |url| |summary| |fix|
     #
-    def self.all_new_vulns_by_ip(options = {})
-      "SELECT DISTINCT on (da.ip_address, subs.vulnerability_id) subs.asset_id, da.ip_address, da.host_name, subs.current_scan, 
-       subs.vulnerability_id, dv.nexpose_id as vuln_nexpose_id,
-       string_agg(DISTINCT 'Summary: ' || coalesce(ds.summary, 'None') ||
-                           '|Nexpose ID: ' || ds.nexpose_id ||
-                           '|Fix: ' || coalesce(proofAsText(ds.fix), 'None') ||
-                           '|URL: ' || coalesce(ds.url, 'None'), '~') as solutions,
-       fa.riskscore, dv.cvss_score,
-       string_agg(DISTINCT dvr.source || ': ' || dvr.reference, ', ') as references,
-        fasva.first_discovered, fasva.most_recently_discovered
-        FROM (SELECT fasv.asset_id, fasv.vulnerability_id, s.current_scan
-          FROM fact_asset_scan_vulnerability_finding fasv
-          JOIN
-          (
-            SELECT asset_id, previousScan(asset_id) AS baseline_scan, lastScan(asset_id) AS current_scan
-              FROM dim_asset #{createAssetString(options)}) s
-              ON s.asset_id = fasv.asset_id AND (fasv.scan_id = s.baseline_scan OR fasv.scan_id = s.current_scan)
-              GROUP BY fasv.asset_id, fasv.vulnerability_id, s.current_scan, fasv.scan_id
-              HAVING NOT baselineComparison(fasv.scan_id, current_scan) = 'Old'
-          ) subs
-          JOIN dim_vulnerability dv USING (vulnerability_id)
-          LEFT JOIN dim_vulnerability_reference dvr USING (vulnerability_id)
-          JOIN dim_asset_vulnerability_solution davs USING (vulnerability_id)
-          JOIN fact_asset_vulnerability_age fasva ON subs.vulnerability_id = fasva.vulnerability_id AND subs.asset_id = fasva.asset_id
-          JOIN dim_solution ds USING (solution_id)
-          JOIN dim_asset da ON subs.asset_id = da.asset_id
-          JOIN fact_asset fa ON fa.asset_id = da.asset_id
-          #{createRiskString( options[:riskScore])}
-          GROUP BY subs.asset_id, da.ip_address, da.host_name, subs.current_scan, subs.vulnerability_id, dv.nexpose_id,
-                 fa.riskscore, dv.cvss_score, fasva.first_discovered, fasva.most_recently_discovered
-          ORDER BY da.ip_address, subs.vulnerability_id"
+    def self.all_new_vulns_by_ip_old(options = {})
+      "SELECT asset_id, vulnerability_id, ip_address, riskscore, nexpose_id, cvss_score,
+                first_discovered, most_recently_discovered,
+                array_agg(solution_id) as solution_ids
+      FROM (SELECT asset_id, vulnerability_id FROM fact_asset_vulnerability_finding) favf
+      JOIN (SELECT vulnerability_id, nexpose_id, cvss_score FROM dim_vulnerability) dv USING (vulnerability_id)
+      JOIN (SELECT asset_id, vulnerability_id, first_discovered, most_recently_discovered FROM fact_asset_vulnerability_age) fava USING (asset_id, vulnerability_id)
+      JOIN (SELECT asset_id, ip_address FROM dim_asset) da USING (asset_id)
+      JOIN (SELECT asset_id, riskscore FROM fact_asset) fa USING (asset_id)
+      JOIN dim_asset_vulnerability_solution USING (asset_id, vulnerability_id)
+      #{createAssetString(options)}
+      #{createRiskString( options[:riskScore])}
+      GROUP BY asset_id, vulnerability_id, ip_address, riskscore, nexpose_id, cvss_score,
+               first_discovered, most_recently_discovered
+      ORDER BY asset_id, vulnerability_id"
     end
 
     # Gets all delta vulns for all sites sorted by vuln ID.
@@ -101,7 +160,7 @@ module NexposeTicketing
     #   -Returns |asset_id| |ip_address| |current_scan|  |vulnerability_id||solution_id| |nexpose_id|
     #    |url| |summary| |fix|
     #
-    def self.all_new_vulns_by_vuln_id(options = {})
+    def self.all_new_vulns_by_vuln_id_old(options = {})
         "SELECT DISTINCT on (subs.vulnerability_id) subs.vulnerability_id, dv.nexpose_id as vuln_nexpose_id, dv.title, MAX(dv.cvss_score) as cvss_score,
                    string_agg(DISTINCT subs.asset_id ||
                      '|' || da.ip_address ||

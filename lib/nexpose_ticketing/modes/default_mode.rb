@@ -14,7 +14,7 @@ class DefaultMode < BaseMode
 
   # Returns the fields used to identify individual tickets
   def get_matching_fields
-    ['ip_address', 'vulnerability_id']
+    %w(ip_address vulnerability_id)
   end
 
   # Returns the ticket's title
@@ -30,7 +30,7 @@ class DefaultMode < BaseMode
   # Returns the base ticket description object
   def get_description(nexpose_id, row)
     description = { nxid: "NXID: #{get_nxid(nexpose_id, row)}" }
-    fields = ['header', 'references', 'solutions']
+    fields = %w(header references solutions)
     fields.each { |f| description[f.intern] = self.send("get_#{f}", row) }
     description[:header] << get_discovery_info(row)
     description

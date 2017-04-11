@@ -8,6 +8,10 @@ class BaseMode
     @log = NexposeTicketing::NxLogger.instance
   end
 
+  def set_solution_store(solution_store)
+    @solution_store = solution_store
+  end
+
   # True if this mode supports ticket updates
   def updates_supported?
     true
@@ -122,9 +126,12 @@ class BaseMode
   #   - String containing a short summary of the vulnerability.
   #
   def get_short_summary(row)
-    summary = row['solutions'].to_s
-    delimiter = summary.index('|')
-    return summary[summary.index(':')+1...delimiter].strip if delimiter
+    solution_ids = row['solution_ids'][1..-2].split(',')
+    return '' if solution_ids.first == 'NULL'
+
+    sol = @solution_store.get_solution(solution_ids.first)
+    summary = sol[:summary] || ''
+
     summary.length <= 100 ? summary : summary[0...100]
   end
 
@@ -136,11 +143,25 @@ class BaseMode
   #   - String formatted with solution information.
   #
   def get_solutions(row)
-    row['solutions'].to_s.gsub('|', "\n").gsub('~', "\n--\n")
+    solution_ids = row['solution_ids'][1..-2].split(',')
+    return '' if solution_ids.first == 'NULL'
+
+    solutions = @solution_store.get_solutions solution_ids
+
+    solutions.map! do |sol|
+      format = "Summary: #{sol[:summary] || 'None'}\n" \
+                 "Nexpose ID: #{sol[:nexpose_id]}\n\n" \
+                 "Fix: #{sol[:fix]}\n"
+
+      format = format + "\nURL: #{sol[:url]}" unless sol[:url].nil?
+      format + "\n"
+    end
+
+    solutions.join("\n--\n")
   end
 
   def get_discovery_info(row)
-    return '' if row['first_discovered'].to_s == ""
+    return '' if row['first_discovered'].to_s == ''
     info = "\nFirst Seen: #{row['first_discovered']}\n"
     info << "Last Seen: #{row['most_recently_discovered']}\n"
     info
@@ -175,7 +196,9 @@ class BaseMode
 
     row['assets'].to_s.split('~').each do |a|
       asset = a.split('|')
-      assets << " - #{asset[1]} #{"\t(#{asset[2]})" if !asset[2].empty?}\n"
+      asset_entry = " - #{asset[1]} "
+      asset_entry << "\t(#{asset[2]})" unless (asset[2].nil? || asset[2].empty?)
+      assets << "#{asset_entry}\n"
     end
     assets
   end
