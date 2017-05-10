@@ -807,7 +807,7 @@ module NexposeTicketing
         fail 'Nexpose item cannot be null or empty' if nexpose_item.nil? || reported_scan_id.nil?
       end
 
-      report_config.add_filter('version', '1.2.0')
+      report_config.add_filter('version', '2.0.0')
       report_config.add_filter('query', Queries.send(query_name, options))
 
       id_type = if options[:report_type].to_s == 'initial'
