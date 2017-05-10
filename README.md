@@ -77,6 +77,12 @@ We welcome contributions to this package. We ask only that pull requests and pat
 
 ## Changelog
 
+### 1.4.2
+10-05-17
+
+Fixed issue where an initial integration run would fail if a site had been scanned more than once, but its' latest scan was a Discovery Scan.  
+
+Updated the ticket_service documentation to include information about a fix for the "Unable to find hostname" issue, seen with the ServiceNow helper.
 
 ### 1.4.1
 11-04-17
@@ -87,9 +93,7 @@ Resolved issue with creating Initial tickets using the ServiceNow helper
 11-04-17
 
 #### General Ticket Generation
-
 The Nexpose Ticketing gem has moved away from generating most of its data for current vulnerabilities via the Nexpose reporting engine and ad-hoc reports. 
-
 - It now uses the [Nexpose-Client gem](https://rubygems.org/gems/nexpose) to retrieve current information on vulnerabilities affecting assets on a per site or per tag basis.  
 - For calculating new, same or old vulnerability information, a basic report of the previous scan is still generated for comparison.  
 - Overall, the speed of the Ticketing gem has been improved for larger data sets.
