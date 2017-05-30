@@ -102,13 +102,18 @@ We welcome contributions to this package. We ask only that pull requests and pat
 
 ## Changelog
 
+### 1.5.2
+26-05-17  
+Command line options have been added to the gem. Several are common to all Nexpose gem integrations. Call the gem with '-h' or '--help' to view these options.
+
+### 1.5.1
+16-05-17
+Minor update to change storage location of log files.
+
 ### 1.5.0
 16-05-17  
 Added an encryption configuration file. 
 Usernames and passwords within the configuration files are now encrypted when the application runs.
-
-26-05-17  
-Command line options have been added to the gem. Several are common to all Nexpose gem integrations. Call the gem with '-h' or '--help' to view these options.
 
 ### 1.4.2
 10-05-17
