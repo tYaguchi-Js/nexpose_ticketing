@@ -1,35 +1,43 @@
 #!/usr/bin/env ruby
 require 'yaml'
 require 'nexpose_ticketing'
-require 'nexpose_ticketing/nx_logger'
 require 'nexpose_ticketing/version'
-require 'optparse'
+require 'nexpose_ticketing/utilities/nx_logger'
+require_relative '../lib/nexpose_ticketing/utilities/config_parser'
+require 'nexpose_ticketing/utilities/gem_options'
 
 options = {}
-OptionParser.new do |opts|
-  opts.banner = "Usage: nexpose_ticketing [service name]"
-end.parse!
-
 if ARGV.count == 0
   puts 'Ticketing system name required.'
   exit -1
 end
 
 system = ARGV.first
-config_path = File.join(File.dirname(__FILE__),
-                        "../lib/nexpose_ticketing/config/#{system}.config")
+config_dir = File.join(File.dirname(__FILE__),
+                       '../lib/nexpose_ticketing/config/')
+config_path = File.join(config_dir, "#{system}.config")
+service_config_path = File.join(config_dir, 'ticket_service.config')
 
 unless File.exists? config_path
   puts "Configuration file could not be found at #{config_path}"
   exit -1
 end
 
-# Read in JIRA options from jira.config.
-service_options = begin
-  YAML.load_file(config_path)
-rescue ArgumentError => e
-  raise "Could not parse YAML #{config_path} : #{e.message}"
-end
+# We need to load the general config to get the encryption details location
+# This is because the ticket gem uses two configs at a time
+ticket_service = YAML.load_file(service_config_path)
+enc_path = ticket_service[:encryption_options][:directory]
+
+# Setup CLI Options
+config_paths = [config_path, service_config_path]
+GemOptions.create_parser
+          .with_banner_and_options('nexpose_ticketing service_name')
+          .with_configuration_encryption(config_paths, enc_path)
+          .with_help_and_version('Nexpose Ticketing', NexposeTicketing::VERSION)
+          .parse
+
+# Now we can load the config as normal
+service_options = ConfigParser.get_config(config_path, enc_path)
 
 log = NexposeTicketing::NxLogger.instance
 log.setup_statistics_collection(service_options[:vendor], 
@@ -37,9 +45,9 @@ log.setup_statistics_collection(service_options[:vendor],
                                 NexposeTicketing::VERSION)
 log.setup_logging(true, 'info')
 
-current_encoding = Encoding.default_external=Encoding.find("UTF-8")
+current_encoding = Encoding.default_external=Encoding.find('UTF-8')
 
 log.log_message("Current Encoding set to: #{current_encoding}")
 
-# Initialize Ticket Service using JIRA.
+# Initialize Ticket Service.
 NexposeTicketing.start(service_options)

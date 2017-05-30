@@ -2,7 +2,7 @@ require 'net/http'
 require 'nokogiri'
 require 'dbm'
 require_relative './base_helper'
-require 'nexpose_ticketing/nx_logger'
+require 'nexpose_ticketing/utilities/nx_logger'
 require 'nexpose_ticketing/version'
 
 class ServiceDeskHelper < BaseHelper

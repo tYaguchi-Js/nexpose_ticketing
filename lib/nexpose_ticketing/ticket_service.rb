@@ -53,22 +53,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     require 'fileutils'
     require 'nexpose_ticketing/ticket_repository'
     require 'nexpose_ticketing'
-    require 'nexpose_ticketing/nx_logger'
+    require 'nexpose_ticketing/utilities/nx_logger'
     require 'nexpose_ticketing/version'
     require 'nexpose_ticketing/store'
+    require_relative './utilities/config_parser'
 
-    TICKET_SERVICE_CONFIG_PATH =  File.join(File.dirname(__FILE__), '/config/ticket_service.config')
+    TICKET_SERVICE_CONFIG_PATH =  File.join(File.dirname(__FILE__),
+                                            '/config/ticket_service.config')
     LOGGER_FILE = File.join(File.dirname(__FILE__), '/logs/ticket_service.log')
 
     attr_accessor :helper_data, :nexpose_data, :options, :ticket_repository, :first_time
 
     def setup(helper_data)
-      # Gets the Ticket Service configuration.
-      service_data = begin
-        YAML.load_file(TICKET_SERVICE_CONFIG_PATH)
-      rescue ArgumentError => e
-        raise "Could not parse YAML #{TICKET_SERVICE_CONFIG_PATH} : #{e.message}"
-      end
+      service_data = ConfigParser.get_config(TICKET_SERVICE_CONFIG_PATH)
 
       @helper_data = helper_data
       @nexpose_data = service_data[:nexpose_data]

@@ -1,4 +1,4 @@
-require 'nexpose_ticketing/nx_logger'
+require 'nexpose_ticketing/utilities/nx_logger'
 
 class BaseMode 
 

@@ -3,7 +3,7 @@ require 'net/http'
 require 'net/https'
 require 'uri'
 require 'csv'
-require 'nexpose_ticketing/nx_logger'
+require 'nexpose_ticketing/utilities/nx_logger'
 require 'nexpose_ticketing/version'
 require_relative './base_helper'
 

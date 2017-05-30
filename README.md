@@ -49,20 +49,45 @@ Please refer to your particular Ruby documentation for actual installation folde
 A logger is also implemented by default, and the log can be found under `<install_location>/lib/nexpose_ticketing/logs/`
 Please refer to the log file in case of an error.
 
+### Encryption Settings
+
+The usernames and passwords within the configuration files are automatically encrypted when the integration runs. The key and IV files used during encryption/decryption are saved within the config folder by default.
+
+#### Setting Custom Locations for Encryption Files
+
+To set custom locations for the key and IV files, update the following values within the encryption.config file:
+
+ - key_filename - The absolute path to where the key file will be created.
+ - iv_file - The absolute path to where the IV file will be created.
+
+To set a custom path after the integration has already executed, the files must be moved to the new location manually.
+
+#### Encrypting the Configuration without running the Integration
+The Nexpose Ticketing integration can encrypt its configuration file without running the gem. This allows users to secure their login information for future use e.g for use in a cron-schedule. 
+ 
+The command to do so is:  
+```
+nexpose_ticketing servicename -e
+```  
+or  
+```
+nexpose_ticketing servicename --encrypt_config
+```
+
 ## Contributions
 
 To develop your own implementation for Ticketing service 'foo':
 
 1. Create a helper class that implements the following methods:
-	* Initialize: This is the constructor that will take the implementation options and the service options. It should inherit from the base_helper class.
-	* create_ticket(tickets) - This method should implement the transport class for the 'foo' service (https, smtp, SOAP, etc).
-	* prepare_create_tickets(vulnerability_list, nexpose_identifier_id) - This method will take the vulnerability_list in CSV format and transform it into 'foo' accepted data (JSON, XML, etc). The implemented helpers group data into a single ticket according to the current ticketing mode: Per IP in IP mode and per vulnerability in Vulnerability mode.
+  * Initialize: This is the constructor that will take the implementation options and the service options. It should inherit from the base_helper class.
+  * create_ticket(tickets) - This method should implement the transport class for the 'foo' service (https, smtp, SOAP, etc).
+  * prepare_create_tickets(vulnerability_list, nexpose_identifier_id) - This method will take the vulnerability_list in CSV format and transform it into 'foo' accepted data (JSON, XML, etc). The implemented helpers group data into a single ticket according to the current ticketing mode: Per IP in IP mode and per vulnerability in Vulnerability mode.
 
 2. For full functionality (updating and closing tickets), also implement the following methods:
-	* update_tickets(tickets) - This method should implement the transport class for the 'foo' service (https, smtp, SOAP, etc), to send updated ticket descriptions to the service for specific existing tickets.
-	* prepare_update_tickets(vulnerability_list, nexpose_identifier_id) - This method will take the vulnerability_list in CSV format and transform it into 'foo' accepted data (JSON, XML, etc) for updating exisiting tickets.
-	* close_tickets(tickets) - This method should implement the transport class for the 'foo' service (https, smtp, SOAP, etc), to send closure messages to the service for a specific exisiting ticket.
-	* prepare_close_tickets(vulnerability_list, nexpose_identifier_id) - This method will take the vulnerability_list in CSV format and transform it into 'foo' accepted data (JSON, XML, etc) containing information about the tickets to close.
+  * update_tickets(tickets) - This method should implement the transport class for the 'foo' service (https, smtp, SOAP, etc), to send updated ticket descriptions to the service for specific existing tickets.
+  * prepare_update_tickets(vulnerability_list, nexpose_identifier_id) - This method will take the vulnerability_list in CSV format and transform it into 'foo' accepted data (JSON, XML, etc) for updating exisiting tickets.
+  * close_tickets(tickets) - This method should implement the transport class for the 'foo' service (https, smtp, SOAP, etc), to send closure messages to the service for a specific exisiting ticket.
+  * prepare_close_tickets(vulnerability_list, nexpose_identifier_id) - This method will take the vulnerability_list in CSV format and transform it into 'foo' accepted data (JSON, XML, etc) containing information about the tickets to close.
 
 3. A configuration file will be needed in the config folder for service specific options. This is loaded at the start of operation. Please refer to the existing configuration files, as certain options are common to all services.
 
@@ -76,6 +101,14 @@ We welcome contributions to this package. We ask only that pull requests and pat
 * Pull requests may not be accepted for user specific use-cases.
 
 ## Changelog
+
+### 1.5.0
+16-05-17  
+Added an encryption configuration file. 
+Usernames and passwords within the configuration files are now encrypted when the application runs.
+
+26-05-17  
+Command line options have been added to the gem. Several are common to all Nexpose gem integrations. Call the gem with '-h' or '--help' to view these options.
 
 ### 1.4.2
 10-05-17

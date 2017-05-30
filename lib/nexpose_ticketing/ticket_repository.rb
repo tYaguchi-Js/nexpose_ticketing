@@ -5,7 +5,7 @@ module NexposeTicketing
     require 'nexpose'
     require 'nexpose_ticketing/queries'
     require 'nexpose_ticketing/report_helper'
-    require 'nexpose_ticketing/nx_logger'
+    require 'nexpose_ticketing/utilities/nx_logger'
     require 'nexpose_ticketing/version'
 
     API_VERSION = '1.2.0'
