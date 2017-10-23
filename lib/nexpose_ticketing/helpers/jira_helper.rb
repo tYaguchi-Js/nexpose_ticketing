@@ -163,7 +163,7 @@ class JiraHelper < BaseHelper
 
     if transitions.has_key? 'transitions'
       transitions['transitions'].each do |transition|
-        if transition['to']['id'] == step_id.to_s
+        if transition['to']['statusCategory']['id'].to_s == step_id.to_s
           return transition
         end
       end
